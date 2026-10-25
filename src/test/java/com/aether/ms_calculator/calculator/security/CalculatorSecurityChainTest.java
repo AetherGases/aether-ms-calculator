@@ -29,6 +29,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -63,8 +65,7 @@ class CalculatorSecurityChainTest {
 
   @Autowired private MockMvc mockMvc;
 
-  @Autowired(required = false)
-  private FilterRegistrationBean<CalculatorAuthenticationFilter> calculatorFilterRegistration;
+  @Autowired private List<FilterRegistrationBean<?>> filterRegistrations;
 
   @MockitoBean private JwtTokenProvider jwtTokenProvider;
 
@@ -112,7 +113,11 @@ class CalculatorSecurityChainTest {
 
   @Test
   void calculatorFilterIsNotRegisteredOnTheServletContainer() {
-    assertThat(calculatorFilterRegistration).isNotNull();
-    assertThat(calculatorFilterRegistration.isEnabled()).isFalse();
+    List<FilterRegistrationBean<?>> calculatorRegistrations =
+        filterRegistrations.stream()
+            .filter(registration -> registration.getFilter() instanceof CalculatorAuthenticationFilter)
+            .toList();
+    assertThat(calculatorRegistrations).isNotEmpty();
+    assertThat(calculatorRegistrations).allMatch(registration -> !registration.isEnabled());
   }
 }

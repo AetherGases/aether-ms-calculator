@@ -11,6 +11,7 @@ import com.aether.ms_calculator.calculator.web.CalculatorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.context.annotation.Profile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,6 +54,7 @@ public final class CalculatorMockMvcSupport {
   }
 
   @RestController
+  @Profile("calculator-auth-probe")
   static class AuthProbeController {
 
     @PostMapping("/calculator/roi")

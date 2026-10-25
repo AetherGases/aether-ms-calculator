@@ -17,9 +17,9 @@ spring:
         expire-length: 3600000
 
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:postgres}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   data:
@@ -36,8 +36,15 @@ spring:
 
   mongodb:
     authentication-database: admin
-    uri: ${MONGO_URL}
+    uri: ${MONGO_URL:mongodb://localhost:27017/test}
     auto-index-creation: true
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration
+      - org.springframework.boot.mongodb.autoconfigure.MongoReactiveAutoConfiguration
+      - org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration
+      - org.springframework.boot.data.mongodb.autoconfigure.DataMongoRepositoriesAutoConfiguration
 
 
 calculator:

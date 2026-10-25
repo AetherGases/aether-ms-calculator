@@ -80,8 +80,30 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          MONGO_URL: ${{ secrets.MONGO_URL }}
+          MONGO_USER: ${{ secrets.MONGO_USER }}
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           REDIS_PASSWORD: ci_redis_password
-        run: mvn clean compile test -DskipTests=false
+          SPRING_PROFILES_ACTIVE: test
+        run: |
+          if [ -n "$MONGO_USER" ]; then
+            ENC_USER=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote_plus(os.environ["MONGO_USER"]))')
+            ENC_PASS=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote_plus(os.environ.get("MONGO_PASSWORD", "")))')
+            export MONGO_URL="mongodb://${ENC_USER}:${ENC_PASS}@localhost:27017/admin?authSource=admin"
+          else
+            export MONGO_URL="mongodb://localhost:27017/admin"
+          fi
+          mvn clean compile test -DskipTests=false
+
+      - name: Show Surefire reports
+        if: failure()
+        run: |
+          if [ -d target/surefire-reports ]; then
+            for f in target/surefire-reports/*.txt; do
+              echo "===== $f ====="
+              cat "$f"
+            done
+          else
+            echo "No surefire reports found"
+          fi
