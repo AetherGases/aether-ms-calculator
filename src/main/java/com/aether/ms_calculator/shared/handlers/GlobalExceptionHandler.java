@@ -1,6 +1,6 @@
 package com.aether.ms_calculator.shared.handlers;
 
-import com.aether.ms_calculator.shared.exceptions.CoreApiException;
+import com.aether.ms_calculator.shared.exceptions.MsCalculatorException;
 import com.aether.ms_calculator.shared.handlers.dto.output.ExceptionOutputDTO;
 import com.aether.ms_calculator.shared.services.MessageService;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +21,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
   private final MessageService messageService;
-  @ExceptionHandler(CoreApiException.class)
-  public ResponseEntity<ExceptionOutputDTO> handleCoreApiException(CoreApiException ex){
+  @ExceptionHandler(MsCalculatorException.class)
+  public ResponseEntity<ExceptionOutputDTO> handleMsCalculatorException(MsCalculatorException ex){
+    String message = ex.isMessageKey()
+        ? messageService.getMessage(ex.getMessage())
+        : ex.getMessage();
     return new ResponseEntity<>(
         new ExceptionOutputDTO(
-            messageService.getMessage(ex.getMessage()),
-            ex.getStatus()
+            message,
+            ex.getStatus(),
+            ex.getErrorCode()
         ),
         ex.getStatus()
     );

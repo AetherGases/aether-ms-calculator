@@ -1,5 +1,6 @@
 package com.aether.ms_calculator.calculator.domain;
 
+import com.aether.ms_calculator.shared.exceptions.BadRequestException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class InvestmentValidator {
 
     public InvestmentParsed validate(JsonNode request) {
         if (request == null || !request.isObject()) {
-            throw new InvestmentValidationException("The request must be a JSON object.");
+            throw invalid("The request must be a JSON object.");
         }
 
         rejectUnknownFields(request);
@@ -49,7 +50,7 @@ public class InvestmentValidator {
             }
         });
         if (!unknown.isEmpty()) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "The request takes no " + String.join(", ", unknown)
                             + ". It accepts: "
                             + String.join(", ", REQUEST_FIELDS)
@@ -60,7 +61,7 @@ public class InvestmentValidator {
     private double parsePositiveCapex(JsonNode node) {
         double capex = parseNumber(node, "capex");
         if (capex <= 0) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"capex\" must be the initial investment, above zero, got " + PythonRepr.of(node) + ".");
         }
         return capex;
@@ -69,7 +70,7 @@ public class InvestmentValidator {
     private double parseWacc(JsonNode node) {
         double wacc = parseNumber(node, "wacc_monthly");
         if (!(0 <= wacc && wacc < MAX_WACC_MONTHLY)) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"wacc_monthly\" must be the monthly discount rate as a decimal between 0 and 1 (0.01 is 1% a month), got "
                             + PythonRepr.of(node)
                             + ". An annual rate must be converted before it is sent.");
@@ -87,7 +88,7 @@ public class InvestmentValidator {
 
         if (given.size() != 1) {
             String suffix = given.isEmpty() ? "neither" : String.join(" and ", given);
-            throw new InvestmentValidationException(
+            throw invalid(
                     "The request must carry exactly one of \"cash_flows\" (the monthly flows, up to "
                             + HORIZON_MONTHS
                             + ") or \"monthly_cash_flow\" (one flow repeated over the "
@@ -109,7 +110,7 @@ public class InvestmentValidator {
 
         JsonNode flowsNode = request.get("cash_flows");
         if (!flowsNode.isArray() || flowsNode.isEmpty()) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"cash_flows\" must be a list of monthly cash flows, oldest first, got "
                             + PythonRepr.of(flowsNode)
                             + ".");
@@ -117,7 +118,7 @@ public class InvestmentValidator {
 
         ArrayNode flowsArray = (ArrayNode) flowsNode;
         if (flowsArray.size() > HORIZON_MONTHS) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"cash_flows\" must carry at most "
                             + HORIZON_MONTHS
                             + " monthly flows, one per month of the horizon, got "
@@ -135,18 +136,22 @@ public class InvestmentValidator {
 
     private double parseNumber(JsonNode node, String field) {
         if (node == null || node.isNull() || node.isMissingNode()) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"" + field + "\" must be a number, got None.");
         }
         if (node.isBoolean() || !node.isNumber()) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"" + field + "\" must be a number, got " + PythonRepr.of(node) + ".");
         }
         double value = node.doubleValue();
         if (!Double.isFinite(value)) {
-            throw new InvestmentValidationException(
+            throw invalid(
                     "\"" + field + "\" must be a number, got " + PythonRepr.of(node) + ".");
         }
         return value;
+    }
+
+    private static BadRequestException invalid(String message) {
+        return BadRequestException.withLiteralMessage(message, "validation_error");
     }
 }

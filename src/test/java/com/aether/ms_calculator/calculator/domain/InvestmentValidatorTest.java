@@ -3,6 +3,7 @@ package com.aether.ms_calculator.calculator.domain;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.aether.ms_calculator.shared.exceptions.BadRequestException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsUnknownFieldsBeforeCapex() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(parse("{\"discount_rate\":0.1,\"tax\":0.3}")));
         assertEquals(
                 "The request takes no discount_rate, tax. It accepts: capex, wacc_monthly, cash_flows, monthly_cash_flow.",
@@ -31,7 +32,7 @@ class InvestmentValidatorTest {
     @Test
     void missingCapexIsNone() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(parse("{\"wacc_monthly\":0.25,\"cash_flows\":[125]}")));
         assertEquals("\"capex\" must be a number, got None.", error.getMessage());
     }
@@ -40,7 +41,7 @@ class InvestmentValidatorTest {
     @ValueSource(strings = {"null", "true", "\"150\"", "[150]"})
     void rejectsNonNumberCapex(String capexJson) throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":" + capexJson + ",\"wacc_monthly\":0.25,\"cash_flows\":[125]}")));
         assertEquals("\"capex\" must be a number, got " + expectedRepr(capexJson) + ".", error.getMessage());
@@ -49,7 +50,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsNonFiniteCapex() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":1e309,\"wacc_monthly\":0.25,\"cash_flows\":[125]}")));
         assertEquals("\"capex\" must be a number, got inf.", error.getMessage());
@@ -58,7 +59,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsNonPositiveCapex() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":0,\"wacc_monthly\":0.25,\"cash_flows\":[125]}")));
         assertEquals("\"capex\" must be the initial investment, above zero, got 0.", error.getMessage());
@@ -67,7 +68,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsInvalidWaccRange() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":150,\"wacc_monthly\":1,\"cash_flows\":[125]}")));
         assertEquals(
@@ -85,7 +86,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsNeitherFlowField() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(parse("{\"capex\":150,\"wacc_monthly\":0.25}")));
         assertEquals(
                 "The request must carry exactly one of \"cash_flows\" (the monthly flows, up to 60) or \"monthly_cash_flow\" (one flow repeated over the 60 months), got neither.",
@@ -95,7 +96,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsBothFlowFields() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125],\"monthly_cash_flow\":5000}")));
         assertEquals(
@@ -106,7 +107,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsEmptyCashFlowsList() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[]}")));
         assertEquals(
@@ -125,7 +126,7 @@ class InvestmentValidatorTest {
         }
         flows.append(']');
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":" + flows + "}")));
         assertEquals(
@@ -136,7 +137,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsBadCashFlowItem() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125,\"x\"]}")));
         assertEquals("\"cash_flows[1]\" must be a number, got 'x'.", error.getMessage());
@@ -145,7 +146,7 @@ class InvestmentValidatorTest {
     @Test
     void rejectsBadMonthlyCashFlow() throws Exception {
         var error = assertThrows(
-                InvestmentValidationException.class,
+                BadRequestException.class,
                 () -> VALIDATOR.validate(
                         parse("{\"capex\":150,\"wacc_monthly\":0.25,\"monthly_cash_flow\":true}")));
         assertEquals("\"monthly_cash_flow\" must be a number, got True.", error.getMessage());

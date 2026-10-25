@@ -1,19 +1,18 @@
-package com.aether.ms_calculator.calculator.security;
+package com.aether.ms_calculator.shared.security;
 
-import com.aether.ms_calculator.calculator.config.CalculatorAuthenticationConfiguration;
-import com.aether.ms_calculator.calculator.config.CalculatorJsonNodeWebConfiguration;
+import com.aether.ms_calculator.calculator.controllers.CalculatorPaybackController;
+import com.aether.ms_calculator.calculator.controllers.CalculatorRoiController;
 import com.aether.ms_calculator.calculator.domain.InvestmentCalculator;
 import com.aether.ms_calculator.calculator.domain.InvestmentValidator;
+import com.aether.ms_calculator.calculator.services.CalculatorService;
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
-import com.aether.ms_calculator.calculator.web.CalculatorExceptionHandler;
-import com.aether.ms_calculator.calculator.web.CalculatorPaybackController;
-import com.aether.ms_calculator.calculator.web.CalculatorRoiController;
-import com.aether.ms_calculator.calculator.web.CalculatorService;
+import com.aether.ms_calculator.shared.config.AuthenticationKeyFilterConfiguration;
 import com.aether.ms_calculator.shared.config.JacksonConfig;
 import com.aether.ms_calculator.shared.config.SecurityConfig;
 import com.aether.ms_calculator.shared.exceptions.UnauthorizedException;
 import com.aether.ms_calculator.shared.handlers.GlobalExceptionHandler;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
+import com.aether.ms_calculator.shared.services.MessageService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -39,26 +36,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(
-    controllers = {CalculatorRoiController.class, CalculatorPaybackController.class},
-    excludeFilters =
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = GlobalExceptionHandler.class))
+@WebMvcTest(controllers = {CalculatorRoiController.class, CalculatorPaybackController.class})
 @AutoConfigureMockMvc
 @Import({
   SecurityConfig.class,
   JacksonConfig.class,
-  CalculatorJsonNodeWebConfiguration.class,
-  CalculatorAuthenticationConfiguration.class,
+  AuthenticationKeyFilterConfiguration.class,
   CalculatorService.class,
   InvestmentValidator.class,
   InvestmentCalculator.class,
-  CalculatorExceptionHandler.class
+  GlobalExceptionHandler.class
 })
 @TestPropertySource(
     properties = "calculator.authentication.internal-key=" + CalculatorMockMvcSupport.TEST_INTERNAL_KEY)
-class CalculatorSecurityChainTest {
+class AuthenticationKeyFilterChainTest {
 
-  private static final String AUTH_HEADER = "authentication-key";
+  private static final String AUTH_HEADER = AuthenticationKeyFilter.HEADER_NAME;
   private static final String KEY = CalculatorMockMvcSupport.TEST_INTERNAL_KEY;
   private static final String WORKED_EXAMPLE =
       "{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";
@@ -68,6 +61,8 @@ class CalculatorSecurityChainTest {
   @Autowired private List<FilterRegistrationBean<?>> filterRegistrations;
 
   @MockitoBean private JwtTokenProvider jwtTokenProvider;
+
+  @MockitoBean private MessageService messageService;
 
   @BeforeEach
   void jwtProviderRejectsAnyResolvedToken() {
@@ -115,7 +110,7 @@ class CalculatorSecurityChainTest {
   void calculatorFilterIsNotRegisteredOnTheServletContainer() {
     List<FilterRegistrationBean<?>> calculatorRegistrations =
         filterRegistrations.stream()
-            .filter(registration -> registration.getFilter() instanceof CalculatorAuthenticationFilter)
+            .filter(registration -> registration.getFilter() instanceof AuthenticationKeyFilter)
             .toList();
     assertThat(calculatorRegistrations).isNotEmpty();
     assertThat(calculatorRegistrations).allMatch(registration -> !registration.isEnabled());

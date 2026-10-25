@@ -66,8 +66,8 @@ this one. Do not invent a `web/` package.
 | --- | --- |
 | `controllers/` | HTTP adapters (`@RestController`). No business rules. |
 | `services/` | Use-cases called by controllers. |
-| `dto/input`, `dto/output` | Request and response types. Optional `dto/query_params`. |
-| `mappers/` | DTO ↔ domain / entity mapping. |
+| `dto/input`, `dto/output` | **Required.** Request and response types for every feature HTTP contract. Optional `dto/query_params` for list filters. |
+| `mappers/` | **Required** whenever the feature has DTOs (always). DTO ↔ domain / entity mapping. |
 | `domain/` | Pure calculation / parsing that is not an HTTP adapter. Optional. |
 
 `shared/` must not grow new HTTP endpoints. Controllers, feature services, and
@@ -79,30 +79,48 @@ feature DTOs stay inside the feature module.
 calculator/
 ├── controllers/   CalculatorRoiController, CalculatorPaybackController
 ├── services/      CalculatorService
-├── domain/        InvestmentValidator, InvestmentCalculator, results
-├── dto/           request / response types when they exist
-└── mappers/       DTO ↔ domain mapping when DTOs exist
+├── domain/        InvestmentValidator, InvestmentCalculator, result records
+├── dto/input/     CalculateInvestmentInputDTO
+├── dto/output/    CalculateRoiOutputDTO, CalculatePaybackOutputDTO
+└── mappers/       CalculatorMapper
 ```
 
 | Package | Owns | May import |
 | --- | --- | --- |
-| `calculator.domain` | parse, validate, calculate, `PythonRepr`, result records | `shared.exceptions` only (no `controllers`, `services`, or `shared.security`) |
-| `calculator.services` | `CalculatorService` (orchestrates domain for HTTP) | `domain`, `dto` |
-| `calculator.controllers` | ROI and payback adapters | `services`, `shared.docs` |
-| `calculator.dto` | input / output types for those routes | nothing from `controllers` |
+| `calculator.domain` | parse, validate, calculate, `PythonRepr`, result records | `shared.exceptions` only (no `controllers`, `services`, `dto`, or `shared.security`) |
+| `calculator.services` | `CalculatorService` (orchestrates domain for HTTP) | `domain`, `dto`, `mappers` |
+| `calculator.controllers` | ROI and payback adapters | `services`, `dto`, `shared.docs` |
+| `calculator.dto.input` / `dto.output` | request / response types for those routes | nothing from `controllers` or `services` |
 | `calculator.mappers` | mapping only | `dto`, `domain` |
 
-Controllers implement `shared.docs.CalculatorControllerDocs` and stay thin:
-delegate to `CalculatorService`. SpringDoc annotations live on the docs
-interface, not duplicated on the controller methods — same pattern as
+Controllers implement `shared.docs.CalculatorControllerDocs.Roi` /
+`Payback` and stay thin: bind feature DTOs and delegate to
+`CalculatorService`. SpringDoc annotations live on that docs type, not
+duplicated on the controller methods — same pattern as
 `AuthControllerDocs`, `InventoryControllerDocs`, and
-`CloudinaryControllerDocs`.
+`CloudinaryControllerDocs`. Docs schemas point at the output DTOs.
 
 Do not put the internal-key filter, exception types, or
 `@RestControllerAdvice` in this module. Those belong in `shared/` (section 3).
 
-Investment math may keep a JSON-node echo of `capex` / `wacc_monthly`. That
-does not justify a `web/` package or a feature-local exception handler.
+### DTOs (required)
+
+Every feature HTTP endpoint uses `dto/input` and `dto/output` types, named
+`*InputDTO` / `*OutputDTO` like the other Java MS. Controllers do not take
+or return `JsonNode` / `ObjectNode`. Shared error envelopes stay
+`shared.handlers.dto.output.ExceptionOutputDTO`; they are not a substitute
+for feature DTOs.
+
+ROI and payback share `CalculateInvestmentInputDTO`. Unknown JSON fields
+are kept on that input (Jackson `@JsonAnySetter`) so domain validation can
+reject them with the hub message. `capex` and `wacc_monthly` stay
+`JsonNode` **fields** on the DTOs so the original JSON tokens are echoed
+(`150`, not `150.0`). That is the only allowed use of `JsonNode` in the
+HTTP layer.
+
+`CalculatorMapper` is the only place that turns the input DTO into the
+domain request node and domain results into output DTOs. Do not rebuild
+JSON maps in the controller or service.
 
 ### HTTP surface
 
@@ -131,8 +149,8 @@ shared/
 
 | Area | Rule |
 | --- | --- |
-| `shared.config` | Process-wide Spring beans. Calculator `@ConfigurationProperties` live under `shared.config.properties`, like Cloudinary. `SecurityConfig` wires JWT **and** the internal-key filter. |
-| `shared.docs` | One `*ControllerDocs` interface per controller. Controllers `implements` it. Do not put OpenAPI annotations only on the controller class. |
+| `shared.config` | Process-wide Spring beans. Calculator `@ConfigurationProperties` live under `shared.config.properties`, like Cloudinary. `SecurityConfig` wires JWT **and** the internal-key filter. Feature JSON is bound through standard Jackson + DTOs; do not add a `JsonNode` HTTP converter. |
+| `shared.docs` | One `*ControllerDocs` interface per controller. Controllers `implements` it. Do not put OpenAPI annotations only on the controller class. Success schemas are the feature output DTOs, not `ObjectNode`. |
 | `shared.exceptions` | **All** API exceptions. Base type is `MsCalculatorException` (rename of leftover `CoreApiException`). Each subclass documents its HTTP status through `getStatus()` (`BadRequestException` → 400, `UnauthorizedException` → 401, …). |
 | `shared.handlers` | The only exception mapper: `GlobalExceptionHandler`. It already handles the base exception. Do not add `CalculatorExceptionHandler` or any feature `@RestControllerAdvice`. |
 | `shared.persistence.postgres` | JPA entities and repositories. Do not put repositories inside `calculator/`. |
@@ -201,6 +219,7 @@ root. Mirror that:
 | --- | --- |
 | `MsCalculatorApplication` | `MsCalculatorApplicationTests` (context load, profile `test`) |
 | `calculator.domain` | `InvestmentValidatorTest`, `InvestmentCalculatorTest`, `PythonReprTest` |
+| `calculator.mappers` | `CalculatorMapperTest` |
 | `calculator.controllers` / `calculator.services` | `CalculatorControllerTests`, `CalculatorServiceTests` |
 | `shared.security` | filter / chain tests next to the filter |
 | (test only) | `calculator.support.CalculatorMockMvcSupport` |
@@ -251,8 +270,8 @@ Ask which class when that is unclear.
   `GlobalExceptionHandler` / `ExceptionOutputDTO`, not a parallel JSON
   shape in the feature module.
 - Echo `capex` and `wacc_monthly` with the original JSON tokens
-  (`InvestmentParsed` + `InvestmentResultJson`). Do not re-serialize those
-  two fields as `150.0` when the client sent `150`.
+  (`JsonNode` fields on the input/output DTOs, mapped by `CalculatorMapper`).
+  Do not re-serialize those two fields as `150.0` when the client sent `150`.
 - Horizon is `InvestmentValidator.HORIZON_MONTHS` (60). Do not duplicate that
   number in controllers.
 - Prefer small, single-purpose types. Controllers do not call the calculator
@@ -264,7 +283,8 @@ Ask which class when that is unclear.
 
 - **PROJECT_STRUCTURE.md** — this file: how to change the service.
 - **`shared.docs.CalculatorControllerDocs`** — OpenAPI for calculator
-  routes (same role as `CloudinaryControllerDocs`).
+  routes (`Roi` / `Payback` nested interfaces; same role as
+  `CloudinaryControllerDocs`).
 - **README.md** — how to run and call it (add or update when onboarding
   text changes; keep structure rules here).
 - **`.scratch/`** — specs and tickets; not a substitute for tests or this
@@ -297,5 +317,9 @@ Do not commit secrets. Do not put a real `INTERNAL_AUTHENTICATION_KEY` or
 - Do not authenticate calculator POSTs with JWT instead of
   `authentication-key`.
 - Do not invent request fields or result fields the hub contract omitted.
+- Do not bind calculator routes to `JsonNode` / `ObjectNode`. Use
+  `calculator.dto.input` and `calculator.dto.output`.
+- Do not skip `dto/input`, `dto/output`, or `mappers/` for a new feature
+  endpoint. DTOs are the HTTP contract, not an optional extra.
 - Do not skip `mvn test` before claiming the suite is green.
 - Do not commit unless the user asked.

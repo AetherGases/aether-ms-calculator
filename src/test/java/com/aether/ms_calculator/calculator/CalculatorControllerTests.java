@@ -1,6 +1,7 @@
-package com.aether.ms_calculator.calculator.web;
+package com.aether.ms_calculator.calculator;
 
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
+import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -12,9 +13,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class CalculatorHttpContractTest {
+class CalculatorControllerTests {
 
-  private static final String AUTH_HEADER = "authentication-key";
+  private static final String AUTH_HEADER = AuthenticationKeyFilter.HEADER_NAME;
   private static final String KEY = CalculatorMockMvcSupport.TEST_INTERNAL_KEY;
 
   private final MockMvc mockMvc = CalculatorMockMvcSupport.mockMvc(KEY);

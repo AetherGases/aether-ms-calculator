@@ -1,4 +1,4 @@
-package com.aether.ms_calculator.calculator.security;
+package com.aether.ms_calculator.shared.security;
 
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,9 +14,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class CalculatorAuthenticationWebTest {
+class AuthenticationKeyFilterTest {
 
-  private static final String AUTH_HEADER = "authentication-key";
+  private static final String AUTH_HEADER = AuthenticationKeyFilter.HEADER_NAME;
   private static final String VALID_KEY = CalculatorMockMvcSupport.TEST_INTERNAL_KEY;
   private static final String BODY =
       "{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";

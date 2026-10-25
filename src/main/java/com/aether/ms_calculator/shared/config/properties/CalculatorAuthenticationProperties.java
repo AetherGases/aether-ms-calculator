@@ -1,4 +1,4 @@
-package com.aether.ms_calculator.calculator.config;
+package com.aether.ms_calculator.shared.config.properties;
 
 import lombok.Getter;
 import lombok.Setter;

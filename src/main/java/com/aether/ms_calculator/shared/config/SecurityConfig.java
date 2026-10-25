@@ -1,10 +1,10 @@
 package com.aether.ms_calculator.shared.config;
 
-import com.aether.ms_calculator.calculator.security.CalculatorAuthenticationFilter;
+import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,11 +21,19 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @EnableWebSecurity
 @Configuration
-@RequiredArgsConstructor
 public class SecurityConfig {
   private final JwtTokenProvider tokenProvider;
   private final HandlerExceptionResolver handlerExceptionResolver;
-  private final CalculatorAuthenticationFilter calculatorAuthenticationFilter;
+  private final AuthenticationKeyFilter authenticationKeyFilter;
+
+  public SecurityConfig(
+      JwtTokenProvider tokenProvider,
+      @Qualifier("handlerExceptionResolver") HandlerExceptionResolver handlerExceptionResolver,
+      AuthenticationKeyFilter authenticationKeyFilter) {
+    this.tokenProvider = tokenProvider;
+    this.handlerExceptionResolver = handlerExceptionResolver;
+    this.authenticationKeyFilter = authenticationKeyFilter;
+  }
   public static final String SECURITY = "BearerAuth";
 
   @Bean
@@ -46,7 +54,7 @@ public class SecurityConfig {
         .httpBasic(AbstractHttpConfigurer::disable)
         .csrf(AbstractHttpConfigurer::disable)
         .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class)
-        .addFilterBefore(calculatorAuthenticationFilter, JwtTokenFilter.class)
+        .addFilterBefore(authenticationKeyFilter, JwtTokenFilter.class)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         )
