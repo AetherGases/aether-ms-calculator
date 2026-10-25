@@ -4,20 +4,20 @@
 
 **Blocked by:** None (can start immediately). Listing (01) is independent; this route does not call GET gases.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Request shape: `{ "years", "current_emission": { "gas", "volume_co2e", "scope" }, "green_gas" }` — `gas` / `green_gas` are `gas.id`; `volume_co2e` is tCO2e per year; `years` is an integer ≥ 1; `scope` is 1, 2, or 3.
-- [ ] Response shape: `{ "future_emission": { "gas", "volume_co2e", "scope" }, "reduction_co2e" }` — `future_emission.gas` is the green id; `scope` is echoed; `future_emission.volume_co2e` already includes `years`.
-- [ ] Formula: `future_emission.volume_co2e = current.volume_co2e * (gwp_green / gwp_current) * years`; `reduction_co2e = current.volume_co2e * years` (GWP from the catalog at request time).
-- [ ] Worked example: fossil CO2 at 10 tCO2e/year for 5 years → green CO2(b) → future 50, reduction 50.
-- [ ] Worked example: CH4 at 28 tCO2e/year for 5 years → green CO2(b) → future 5, reduction 140.
-- [ ] `years` 1 applies the formula once; `volume_co2e` 0 yields future 0 and reduction 0.
-- [ ] Reduction stays `current.volume_co2e * years` even if green GWP is larger than current GWP.
-- [ ] 400 when: unknown JSON fields; missing/wrong types; `years` not an integer ≥ 1; `volume_co2e` missing or negative; `scope` not in {1,2,3}; unknown gas id; current gas is biogenic; green gas is not biogenic.
-- [ ] 400 is not 401: a valid JWT with `calculator:gas` and a bad body is validation, not auth.
-- [ ] Missing/invalid JWT → 401; JWT without `calculator:gas` → 403, before catalog lookup or the formula. `authentication-key` is not enough.
-- [ ] `JwtTokenFilter` does not skip this path; it still skips roi and payback. `AuthenticationKeyFilter` stays on those two routes.
-- [ ] No user, company, or inventory id in the body; identity stays in the JWT; the catalog is global.
-- [ ] The call does not insert `reduction` or change an inventory.
-- [ ] OpenAPI on the calculator docs type describes this operation; success schema is the forecast output DTO.
-- [ ] Behaviour is proven through the `/calculator/**` HTTP seam (no separate domain-only suite required).
+- [x] Request shape: `{ "years", "current_emission": { "gas", "volume_co2e", "scope" }, "green_gas" }` — `gas` / `green_gas` are `gas.id`; `volume_co2e` is tCO2e per year; `years` is an integer ≥ 1; `scope` is 1, 2, or 3.
+- [x] Response shape: `{ "future_emission": { "gas", "volume_co2e", "scope" }, "reduction_co2e" }` — `future_emission.gas` is the green id; `scope` is echoed; `future_emission.volume_co2e` already includes `years`.
+- [x] Formula: `future_emission.volume_co2e = current.volume_co2e * (gwp_green / gwp_current) * years`; `reduction_co2e = current.volume_co2e * years` (GWP from the catalog at request time).
+- [x] Worked example: fossil CO2 at 10 tCO2e/year for 5 years → green CO2(b) → future 50, reduction 50.
+- [x] Worked example: CH4 at 28 tCO2e/year for 5 years → green CO2(b) → future 5, reduction 140.
+- [x] `years` 1 applies the formula once; `volume_co2e` 0 yields future 0 and reduction 0.
+- [x] Reduction stays `current.volume_co2e * years` even if green GWP is larger than current GWP.
+- [x] 400 when: unknown JSON fields; missing/wrong types; `years` not an integer ≥ 1; `volume_co2e` missing or negative; `scope` not in {1,2,3}; unknown gas id; current gas is biogenic; green gas is not biogenic.
+- [x] 400 is not 401: a valid JWT with `calculator:gas` and a bad body is validation, not auth.
+- [x] Missing/invalid JWT → 401; JWT without `calculator:gas` → 403, before catalog lookup or the formula. `authentication-key` is not enough.
+- [x] `JwtTokenFilter` does not skip this path; it still skips roi and payback. `AuthenticationKeyFilter` stays on those two routes.
+- [x] No user, company, or inventory id in the body; identity stays in the JWT; the catalog is global.
+- [x] The call does not insert `reduction` or change an inventory.
+- [x] OpenAPI on the calculator docs type describes this operation; success schema is the forecast output DTO.
+- [x] Behaviour is proven through the `/calculator/**` HTTP seam (no separate domain-only suite required).
