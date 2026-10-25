@@ -70,6 +70,9 @@ public final class AetherConstants {
   public static final int MAX_PERMISSION_DESCRIPTION_LENGTH = 150;
   public static final int MIN_PERMISSION_DESCRIPTION_LENGTH = 3;
 
+  public static final int MAX_PERMISSION_PATTERN_LENGTH = 150;
+  public static final int MIN_PERMISSION_PATTERN_LENGTH = 1;
+
   // Storage File
 
   public static final int MAX_STORAGE_FILE_NAME_LENGTH = 150;

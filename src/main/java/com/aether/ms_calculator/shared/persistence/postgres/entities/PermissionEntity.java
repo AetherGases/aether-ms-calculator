@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-public class PermissionEntity {
+public class PermissionEntity extends DateBaseEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
@@ -26,11 +26,15 @@ public class PermissionEntity {
   @Column(length = AetherConstants.MAX_PERMISSION_DESCRIPTION_LENGTH)
   private String description;
 
+  @Column(length = AetherConstants.MAX_PERMISSION_PATTERN_LENGTH, nullable = false, unique = true)
+  private String pattern;
+
   @ManyToMany(mappedBy = "permissions")
   private List<PermissionGroupEntity> permissionGroups;
 
-  public PermissionEntity(String name, String description) {
+  public PermissionEntity(String name, String description, String pattern) {
     this.name = name;
     this.description = description;
+    this.pattern = pattern;
   }
 }
