@@ -1,8 +1,8 @@
-# 03: Reduction forecast
+# 02: Reduction forecast
 
-**What to build:** `POST /calculator/reduction/forecast` takes a current annual emission, a green-gas id, and a year horizon, and returns remaining tCO2e over that horizon plus fossil tCO2e avoided. It reads two `gas` rows and does not write `reduction`. Auth: JWT + `calculator:gas`.
+**What to build:** `POST /calculator/reduction/forecast` takes a current annual emission, a green-gas id, and a year horizon, and returns remaining tCO2e over that horizon plus fossil tCO2e avoided. It reads two `gas` rows and does not write `reduction`. Auth: JWT + `calculator:gas`. ROI and payback stay on `authentication-key`.
 
-**Blocked by:** 01 JWT on ROI and payback
+**Blocked by:** None (can start immediately). Listing (01) is independent; this route does not call GET gases.
 
 **Status:** ready-for-agent
 
@@ -15,7 +15,8 @@
 - [ ] Reduction stays `current.volume_co2e * years` even if green GWP is larger than current GWP.
 - [ ] 400 when: unknown JSON fields; missing/wrong types; `years` not an integer ≥ 1; `volume_co2e` missing or negative; `scope` not in {1,2,3}; unknown gas id; current gas is biogenic; green gas is not biogenic.
 - [ ] 400 is not 401: a valid JWT with `calculator:gas` and a bad body is validation, not auth.
-- [ ] Missing/invalid JWT → 401; JWT without `calculator:gas` (including `calculator:roi` only) → 403, before catalog lookup or the formula.
+- [ ] Missing/invalid JWT → 401; JWT without `calculator:gas` → 403, before catalog lookup or the formula. `authentication-key` is not enough.
+- [ ] `JwtTokenFilter` does not skip this path; it still skips roi and payback. `AuthenticationKeyFilter` stays on those two routes.
 - [ ] No user, company, or inventory id in the body; identity stays in the JWT; the catalog is global.
 - [ ] The call does not insert `reduction` or change an inventory.
 - [ ] OpenAPI on the calculator docs type describes this operation; success schema is the forecast output DTO.

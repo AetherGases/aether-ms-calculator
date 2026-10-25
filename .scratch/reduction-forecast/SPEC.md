@@ -6,16 +6,16 @@ Status: ready for implementation after this spec is accepted.
 
 The hub and the Aether apps need to forecast how much fossil CO2e is avoided when a current emission is replaced by a green gas over a number of years, and they need to list which gases in the catalog count as green. That contract does not exist on this service today.
 
-The only calculator HTTP surface is discounted ROI and payback. Those two routes still authenticate with a shared `authentication-key`, so they cannot express per-employee permissions. The gas catalog already lives in Postgres (`gas.id`, `formula`, `is_biogenic`, `gwp`), but nothing in this service reads it for a caller.
+The only calculator HTTP surface is discounted ROI and payback. Those two routes authenticate with a shared `authentication-key` and keep that scheme. The gas catalog already lives in Postgres (`gas.id`, `formula`, `is_biogenic`, `gwp`), but nothing in this service reads it for a caller.
 
 ## Solution
 
-Expose two new calculator routes, both authenticated with the employee's JWT:
+Expose two new calculator routes, both authenticated with the employee's JWT and authority `calculator:gas`:
 
 - `POST /calculator/reduction/forecast` — given a current annual emission, a green-gas id, and a year horizon, return the remaining emission over that horizon and the fossil tCO2e avoided.
 - `GET /calculator/gases` — return the gas catalog, marking green gases.
 
-Switch `POST /calculator/roi` and `POST /calculator/payback` to the same JWT scheme. The internal authentication key leaves this service. ROI and payback keep their existing JSON contracts; only auth changes.
+`POST /calculator/roi` and `POST /calculator/payback` keep `authentication-key`. Do not switch them to JWT. Do not enforce `calculator:roi` in this service. The internal key stays as identity on those two routes only.
 
 Green means `gas.is_biogenic`. There is no new column. The forecast reads two `gas` rows and does not write `reduction`.
 
@@ -77,15 +77,15 @@ Green means `gas.is_biogenic`. There is no new column. The forecast reads two `g
 
 28. As an Aether employee with authority `calculator:gas`, I want `GET /calculator/gases` to succeed so that listing and forecasting share the same permission.
 
-29. As an Aether employee with only `calculator:roi`, I want forecast and gas listing to return 403 so that ROI access does not open the gas routes.
+29. As an Aether employee whose JWT lacks `calculator:gas`, I want forecast and gas listing to return 403 so that another calculator permission (or none) does not open the gas routes.
 
-30. As an Aether employee with only `calculator:gas`, I want ROI and payback to return 403 so that gas access does not open investment routes.
+30. As a caller with a JWT and `calculator:gas` but no `authentication-key`, I want ROI and payback to return 401 so that gas access does not open investment routes.
 
-31. As an unauthenticated caller, I want any `/calculator/**` route without a JWT to return 401 so that the old shared key cannot be used.
+31. As an unauthenticated caller, I want forecast and gas listing without a JWT to return 401 so that the shared `authentication-key` is not identity on those routes.
 
-32. As a caller with a malformed or expired JWT, I want 401 so that a bad token is not confused with a missing permission.
+32. As a caller with a malformed or expired JWT on forecast or gas listing, I want 401 so that a bad token is not confused with a missing permission.
 
-33. As an authenticated employee missing the required authority, I want 403 with the shared error envelope so that the hub can tell “not logged in” from “not allowed”.
+33. As an authenticated employee missing `calculator:gas` on forecast or gas listing, I want 403 with the shared error envelope so that the hub can tell “not logged in” from “not allowed”.
 
 34. As an Aether employee, I want error bodies to be `message`, `status`, and `error_code` so that forecast errors match the rest of this service.
 
@@ -101,19 +101,19 @@ Green means `gas.is_biogenic`. There is no new column. The forecast reads two `g
 
 40. As an Aether employee, I want an empty catalog to return `[]` so that a missing seed is visible rather than a 500.
 
-41. As an Aether employee with `calculator:roi`, I want `POST /calculator/roi` to keep returning the same investment JSON as today so that only authentication changes.
+41. As a hub client, I want `POST /calculator/roi` to keep returning the same investment JSON as today, still authenticated with `authentication-key`, so that investment clients do not change.
 
-42. As an Aether employee with `calculator:roi`, I want `POST /calculator/payback` to keep returning the same payback JSON as today so that payback is not redesigned.
+42. As a hub client, I want `POST /calculator/payback` to keep returning the same payback JSON as today, still authenticated with `authentication-key`, so that payback is not redesigned.
 
-43. As a hub that used to send `authentication-key`, I want ROI and payback to stop accepting that header as proof of identity so that investment routes use the same employee JWT as the rest of Aether.
+43. As a hub that sends `authentication-key` to ROI and payback, I want that header to remain proof of identity on those two routes so that this delivery does not break existing investment callers.
 
-44. As an Aether employee, I want ROI and payback to require `Authorization: Bearer <jwt>` so that I do not keep two auth schemes on `/calculator/**`.
+44. As a caller, I want a JWT without `authentication-key` to be insufficient on ROI and payback so that the internal key is still required there.
 
-45. As an Aether employee, I want a valid JWT without `calculator:roi` to be rejected on ROI and payback even if the body is valid so that authorization runs before the investment math.
+45. As a service operator, I want unconfigured `INTERNAL_AUTHENTICATION_KEY` to keep producing 503 on ROI and payback so that those routes still fail closed.
 
 46. As an Aether employee, I want forecast authorization to run before gas lookup and the formula so that a forbidden caller does not touch the catalog.
 
-47. As a service operator, I want no 503 “calculator authentication is not configured” on these routes so that the internal-key configuration is no longer part of this HTTP surface.
+47. As a service operator, I want forecast and gas listing not to depend on `INTERNAL_AUTHENTICATION_KEY`, so that an unconfigured key does not 503 the new routes.
 
 48. As a service operator, I want OpenAPI on the calculator docs type to describe the new forecast and gases operations so that the hub can see the contract next to ROI and payback.
 
@@ -148,34 +148,34 @@ Green means `gas.is_biogenic`. There is no new column. The forecast reads two `g
   - `future_emission.scope = current_emission.scope`
   - `gas.gwp` is constrained `> 0` in the schema, so the ratio is defined.
 - Forecast validation: `years` integer ≥ 1 with no maximum; `volume_co2e` ≥ 0; `scope` ∈ {1,2,3}; unknown JSON fields → 400 (same extra-field policy as ROI); current gas must be non-biogenic; green gas must be biogenic; missing/wrong types → 400.
-- Auth for every `/calculator/**` route is `Authorization: Bearer <jwt>`, the same header as `/api/**`. The JWT filter no longer skips `/calculator/**`. Those routes are authenticated, not `permitAll`.
-- Authorities (permission **name**, which is what this service already puts on `UserDetails`):
-  - `POST /calculator/roi` and `POST /calculator/payback` → `calculator:roi`
-  - `POST /calculator/reduction/forecast` and `GET /calculator/gases` → `calculator:gas`
-- The internal `authentication-key` filter no longer guards calculator routes. Unconfigured `INTERNAL_AUTHENTICATION_KEY` is not a 503 on this surface. ROI/payback JSON behaviour is otherwise unchanged.
-- 401: missing, blank, malformed, or invalid JWT. 403: valid JWT without the required authority. 400: body/catalog validation. Envelope remains `ExceptionOutputDTO` (`message`, `status`, `error_code`). Authorization is decided before forecast validation and before investment validation.
-- No schema change in this spec. `calculator:roi` and `calculator:gas` are permission **names** the shared database must already expose (or tests must insert). This service does not add a table for them. Replacing or deleting the existing `calculator` permission row is not part of this work.
-- Identity in the JWT is an auth gate only. The forecast does not scope the catalog by employee, enterprise, or inventory.
+- Two auth schemes stay on `/calculator/**`:
+  - `POST /calculator/roi` and `POST /calculator/payback` keep `authentication-key`. `AuthenticationKeyFilter` still guards only those two paths. Unconfigured `INTERNAL_AUTHENTICATION_KEY` remains 503 there. A JWT is not identity on those routes.
+  - `POST /calculator/reduction/forecast` and `GET /calculator/gases` use `Authorization: Bearer <jwt>` and authority `calculator:gas` (permission **name** on `UserDetails`). The JWT filter must stop skipping every `/calculator/**` path; it still skips roi and payback.
+- `calculator:roi` is not enforced in this delivery. Seeding or checking that permission is out of scope.
+- 401 on forecast/gases: missing, blank, malformed, or invalid JWT. 403: valid JWT without `calculator:gas`. 400: body/catalog validation. Envelope remains `ExceptionOutputDTO` (`message`, `status`, `error_code`). Authorization is decided before forecast validation. ROI/payback keep their existing key 401/503 behaviour.
+- No schema change in this spec. `calculator:gas` is a permission **name** the shared database must already expose (or tests must insert). This service does not add a table for it. Replacing or deleting the existing `calculator` permission row is not part of this work.
+- Identity in the JWT is an auth gate on forecast and listing only. The forecast does not scope the catalog by employee, enterprise, or inventory.
 
 ## Testing Decisions
 
 A good test observes HTTP behaviour only: status, JSON body, and auth headers. It does not assert class names, SQL, or mapper internals. The formula is proven by posting a forecast against a known catalog and reading `future_emission` and `reduction_co2e`.
 
-**Seam (one):** the HTTP contract of `/calculator/**`. That is the same seam already used by the ROI/payback controller tests and the calculator auth-filter tests (MockMvc against the calculator routes, shared error envelope). Extend that seam so the test caller can present a JWT with authorities and a gas catalog; do not add a second public surface to test through.
+**Seam (one):** the HTTP contract of `/calculator/**`. That is the same seam already used by the ROI/payback controller tests and the calculator auth-filter tests (MockMvc against the calculator routes, shared error envelope). Extend that seam so the test caller can present a JWT with authorities and a gas catalog on the new routes; do not add a second public surface to test through.
 
 Cover at least:
 
 - Forecast worked examples: CO2 → CO2(b) (10 t/year, 5 years → future 50, reduction 50) and CH4 → CO2(b) (28 t/year, 5 years → future 5, reduction 140).
-- Auth matrix: 401 without JWT; 403 with the wrong authority; 200 with `calculator:gas` on forecast and listing; 200 with `calculator:roi` on ROI and payback; 403 when those authorities are swapped.
-- ROI/payback reject `authentication-key` as sufficient auth (401 without JWT).
+- Auth matrix on forecast and listing: 401 without JWT; 403 with a valid JWT that lacks `calculator:gas`; 200 with `calculator:gas`. `authentication-key` is not enough on those routes.
+- ROI/payback still accept a valid `authentication-key` (200, same JSON). JWT without that key is 401. Unconfigured key is still 503.
 - Forecast 400s: extra fields, bad years, negative volume, bad scope, unknown gas id, biogenic current, non-biogenic green.
 - GET gases shape: `id`, `name`, `formula`, `is_green`, `gwp`; only biogenic rows have `is_green` true.
 
-Prior art: calculator HTTP tests via the standalone MockMvc support; auth tests next to the internal-key filter (those must move to the JWT/authority behaviour). Domain investment tests stay as they are; this spec does not add a parallel domain test suite for the forecast formula.
+Prior art: calculator HTTP tests via the standalone MockMvc support; existing internal-key filter tests stay for roi/payback. Add JWT/authority tests for forecast and listing; do not replace the key tests. Domain investment tests stay as they are; this spec does not add a parallel domain test suite for the forecast formula.
 
 ## Out of Scope
 
-- Inserting `calculator:roi` / `calculator:gas` into the shared toolkit seed (dependency, not this service’s schema).
+- Switching ROI/payback to JWT, removing `authentication-key`, or enforcing `calculator:roi`.
+- Inserting `calculator:gas` into the shared toolkit seed (dependency, not this service’s schema).
 - Deleting or renaming the existing `calculator` permission.
 - Persisting forecasts into `reduction` or any inventory.
 - New gases that are not rows in `gas` (hydrogen, biomethane, syngas).
@@ -187,10 +187,10 @@ Prior art: calculator HTTP tests via the standalone MockMvc support; auth tests 
 
 ## Further Notes
 
-This is a breaking auth change for any hub client that still sends `authentication-key` to ROI or payback. After this work those clients must send an employee JWT with `calculator:roi`.
+This is not a breaking auth change for ROI or payback. Those clients keep sending `authentication-key`. Forecast and gas listing are new JWT routes.
 
 Worked numbers assume the seeded catalog (CO2 id 1 GWP 1, CH4 id 2 GWP 28, CO2(b) id 4 GWP 1, biogenic). Tests may use the same ids or an equivalent fixture.
 
 `gas.gwp` is numeric and greater than zero in the schema. Division uses those catalog values at request time.
 
-The grilling session that locked this contract treated later answers as winning: ROI/payback **do** switch to JWT despite an earlier “keep the internal key” turn.
+The grilling session treated later answers as winning except where they contradicted an earlier lock: Q15 (`authentication-key` on roi/payback) stands. JWT applies only to the new forecast and gases routes.
