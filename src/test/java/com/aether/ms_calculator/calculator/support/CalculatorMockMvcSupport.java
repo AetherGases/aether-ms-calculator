@@ -1,7 +1,11 @@
 package com.aether.ms_calculator.calculator.support;
 
+import com.aether.ms_calculator.calculator.controllers.CalculatorGasController;
+import com.aether.ms_calculator.calculator.controllers.CalculatorReductionForecastController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorPaybackController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorRoiController;
+import com.aether.ms_calculator.calculator.services.GasCatalogService;
+import com.aether.ms_calculator.calculator.services.ReductionForecastService;
 import com.aether.ms_calculator.calculator.domain.InvestmentCalculator;
 import com.aether.ms_calculator.calculator.domain.InvestmentValidator;
 import com.aether.ms_calculator.calculator.services.CalculatorService;
@@ -10,6 +14,8 @@ import com.aether.ms_calculator.shared.exceptions.MsCalculatorException;
 import com.aether.ms_calculator.shared.handlers.GlobalExceptionHandler;
 import com.aether.ms_calculator.shared.handlers.dto.output.ExceptionOutputDTO;
 import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
+import com.aether.ms_calculator.shared.security.jwt.JwtTokenFilter;
+import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
 import com.aether.ms_calculator.shared.services.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -44,6 +50,43 @@ public final class CalculatorMockMvcSupport {
         .setMessageConverters(jackson3Converter())
         .setControllerAdvice(advice)
         .addFilters(filter)
+        .build();
+  }
+
+  public static MockMvc reductionForecastMockMvc(
+      String internalAuthenticationKey,
+      JwtTokenProvider jwtTokenProvider,
+      ReductionForecastService reductionForecastService) {
+    ObjectMapper objectMapper = new ObjectMapper();
+    GlobalExceptionHandler advice = exceptionHandler();
+    AuthenticationKeyFilter keyFilter =
+        authenticationKeyFilter(internalAuthenticationKey, objectMapper, advice);
+    JwtTokenFilter jwtFilter =
+        new JwtTokenFilter(jwtTokenProvider, exceptionResolver(objectMapper, advice));
+
+    return MockMvcBuilders.standaloneSetup(
+            new CalculatorReductionForecastController(reductionForecastService))
+        .setMessageConverters(jackson3Converter())
+        .setControllerAdvice(advice)
+        .addFilters(keyFilter, jwtFilter)
+        .build();
+  }
+
+  public static MockMvc gasCatalogMockMvc(
+      String internalAuthenticationKey,
+      JwtTokenProvider jwtTokenProvider,
+      GasCatalogService gasCatalogService) {
+    ObjectMapper objectMapper = new ObjectMapper();
+    GlobalExceptionHandler advice = exceptionHandler();
+    AuthenticationKeyFilter keyFilter =
+        authenticationKeyFilter(internalAuthenticationKey, objectMapper, advice);
+    JwtTokenFilter jwtFilter =
+        new JwtTokenFilter(jwtTokenProvider, exceptionResolver(objectMapper, advice));
+
+    return MockMvcBuilders.standaloneSetup(new CalculatorGasController(gasCatalogService))
+        .setMessageConverters(jackson3Converter())
+        .setControllerAdvice(advice)
+        .addFilters(keyFilter, jwtFilter)
         .build();
   }
 

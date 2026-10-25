@@ -33,7 +33,7 @@ public class AuthenticationKeyFilter extends OncePerRequestFilter {
   }
 
   static boolean isInvestmentPath(String path) {
-    return "/calculator/roi".equals(path) || "/calculator/payback".equals(path);
+    return CalculatorPaths.isAuthenticationKeyRoute(path);
   }
 
   @Override

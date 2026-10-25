@@ -41,4 +41,7 @@ public class EnterpriseEntity extends DateBaseEntity{
 
   @OneToMany(mappedBy = "enterprise")
   private List<UnitEntity> units;
+
+  @OneToMany(mappedBy = "enterprise")
+  private List<PermissionGroupEntity> permissionGroups;
 }

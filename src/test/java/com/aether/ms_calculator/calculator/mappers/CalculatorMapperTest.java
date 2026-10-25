@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.aether.ms_calculator.calculator.domain.RoiResult;
 import com.aether.ms_calculator.calculator.dto.input.CalculateInvestmentInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculateRoiOutputDTO;
+import com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO;
+import com.aether.ms_calculator.shared.persistence.postgres.entities.GasEntity;
+import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
@@ -68,5 +71,18 @@ class CalculatorMapperTest {
     assertEquals("150", output.capex().toString());
     assertEquals(200.0, output.vpTotal());
     assertEquals(33.33, output.roiPercent());
+  }
+
+  @Test
+  void toGasCatalogItem_mapsBiogenicToIsGreen() {
+    GasEntity fossil = new GasEntity(1, "Carbon dioxide", "CO2", false, new BigDecimal("1"), null);
+    GasEntity biogenic = new GasEntity(4, "Biogenic CO2", "CO2(b)", true, new BigDecimal("1"), null);
+
+    GasCatalogItemOutputDTO fossilDto = CalculatorMapper.toGasCatalogItem(fossil);
+    GasCatalogItemOutputDTO biogenicDto = CalculatorMapper.toGasCatalogItem(biogenic);
+
+    assertFalse(fossilDto.isGreen());
+    assertTrue(biogenicDto.isGreen());
+    assertEquals("CO2(b)", biogenicDto.formula());
   }
 }

@@ -38,16 +38,12 @@ public class EmployeeEntity extends UserBaseEntity{
   @Column(name = "employee_status", nullable = false, columnDefinition = "EMPLOYEE_STATUS")
   private EmployeeStatusEnum status;
 
-  @ManyToMany
-  @JoinTable(
-      name = "permission_group_employee",
-      joinColumns = @JoinColumn(name = "id_employee"),
-      inverseJoinColumns = @JoinColumn(name = "id_permission_group")
-  )
-  private List<PermissionGroupEntity> permissionGroups;
+  @ManyToOne
+  @JoinColumn(name = "id_permission_group", nullable = false)
+  private PermissionGroupEntity permissionGroup;
 
   @ManyToOne
-  @JoinColumn(name = "id_department")
+  @JoinColumn(name = "id_department", nullable = false)
   private DepartmentEntity department;
 
   @OneToOne
@@ -69,22 +65,37 @@ public class EmployeeEntity extends UserBaseEntity{
     this.status = EmployeeStatusEnum.ACTIVE;
   }
 
-  public EmployeeEntity(String cpf, String name, String email, String phone, EmployeeStatusEnum status, List<PermissionGroupEntity> permissionGroups) {
+  public EmployeeEntity(
+      String cpf,
+      String name,
+      String email,
+      String phone,
+      EmployeeStatusEnum status,
+      PermissionGroupEntity permissionGroup
+  ) {
     this.cpf = cpf;
     this.name = name;
     this.setEmail(email);
     this.phone = phone;
     this.status = status;
-    this.permissionGroups = permissionGroups;
+    this.permissionGroup = permissionGroup;
   }
 
-  public EmployeeEntity(String cpf, String name, String email, String passwordHash, String phone, EmployeeStatusEnum status, List<PermissionGroupEntity> permissionGroups) {
+  public EmployeeEntity(
+      String cpf,
+      String name,
+      String email,
+      String passwordHash,
+      String phone,
+      EmployeeStatusEnum status,
+      PermissionGroupEntity permissionGroup
+  ) {
     this.cpf = cpf;
     this.name = name;
     this.setEmail(email);
     this.setPasswordHash(passwordHash);
     this.phone = phone;
     this.status = status;
-    this.permissionGroups = permissionGroups;
+    this.permissionGroup = permissionGroup;
   }
 }

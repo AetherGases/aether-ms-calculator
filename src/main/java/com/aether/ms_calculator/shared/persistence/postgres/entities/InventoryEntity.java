@@ -1,11 +1,15 @@
 package com.aether.ms_calculator.shared.persistence.postgres.entities;
 
 import com.aether.ms_calculator.shared.AetherConstants;
+import com.aether.ms_calculator.shared.enums.InventoryStatusEnum;
+import com.aether.ms_calculator.shared.enums.InventoryTypeEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -35,6 +39,16 @@ public class InventoryEntity extends DateBaseEntity{
 
   @Column(name = "inventorying_period_end")
   private LocalDate inventoryPeriodEnd;
+
+  @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+  @Column(name = "status", nullable = false, columnDefinition = "INVENTORY_STATUS")
+  private InventoryStatusEnum status;
+
+  @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+  @Column(name = "type", nullable = false, columnDefinition = "INVENTORY_TYPE")
+  private InventoryTypeEnum type;
 
   @ManyToOne
   @JoinColumn(name = "id_department")

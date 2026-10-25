@@ -6,6 +6,7 @@ import com.aether.ms_calculator.shared.services.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -34,6 +35,17 @@ public class GlobalExceptionHandler {
         ),
         ex.getStatus()
     );
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ExceptionOutputDTO> handleHttpMessageNotReadable(
+      HttpMessageNotReadableException ex) {
+    return new ResponseEntity<>(
+        new ExceptionOutputDTO(
+            "The request body is not valid JSON.",
+            HttpStatus.BAD_REQUEST,
+            "validation_error"),
+        HttpStatus.BAD_REQUEST);
   }
 
   @ExceptionHandler(NoResourceFoundException.class)
