@@ -5,6 +5,8 @@ import com.aether.ms_calculator.calculator.domain.RoiResult;
 import com.aether.ms_calculator.calculator.dto.input.CalculateInvestmentInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculatePaybackOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculateRoiOutputDTO;
+import com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO;
+import com.aether.ms_calculator.shared.persistence.postgres.entities.GasEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import tools.jackson.databind.JsonNode;
@@ -36,6 +38,15 @@ public final class CalculatorMapper {
         result.vpl(),
         result.roiPercent(),
         result.viable());
+  }
+
+  public static GasCatalogItemOutputDTO toGasCatalogItem(GasEntity gas) {
+    return new GasCatalogItemOutputDTO(
+        gas.getId(),
+        gas.getName(),
+        gas.getFormula(),
+        Boolean.TRUE.equals(gas.getBiogenic()),
+        gas.getGwp());
   }
 
   public static CalculatePaybackOutputDTO toPaybackOutput(PaybackResult result) {
