@@ -2,6 +2,7 @@ package com.aether.ms_calculator.calculator.domain;
 
 import com.aether.ms_calculator.shared.exceptions.BadRequestException;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -31,7 +32,8 @@ public class ReductionForecastValidator {
     rejectUnknownFields(currentNode, CURRENT_EMISSION_FIELDS, "current_emission");
 
     int currentGasId = parsePositiveInteger(currentNode.get("gas"), "current_emission.gas");
-    double volumeCo2e = parseNonNegativeNumber(currentNode.get("volume_co2e"), "current_emission.volume_co2e");
+    BigDecimal volumeCo2e =
+        parseNonNegativeNumber(currentNode.get("volume_co2e"), "current_emission.volume_co2e");
     int scope = parseScope(currentNode.get("scope"));
 
     int greenGasId = parsePositiveInteger(request.get("green_gas"), "green_gas");
@@ -79,7 +81,10 @@ public class ReductionForecastValidator {
     if (node == null || node.isNull() || node.isMissingNode()) {
       throw invalid("\"current_emission.scope\" must be 1, 2, or 3, got None.");
     }
-    if (node.isBoolean() || !node.isNumber() || !node.isIntegralNumber()) {
+    if (node.isBoolean()
+        || !node.isNumber()
+        || !node.isIntegralNumber()
+        || !node.canConvertToInt()) {
       throw invalid("\"current_emission.scope\" must be 1, 2, or 3, got " + PythonRepr.of(node) + ".");
     }
     int scope = node.intValue();
@@ -89,18 +94,18 @@ public class ReductionForecastValidator {
     return scope;
   }
 
-  private double parseNonNegativeNumber(JsonNode node, String field) {
+  private BigDecimal parseNonNegativeNumber(JsonNode node, String field) {
     if (node == null || node.isNull() || node.isMissingNode()) {
       throw invalid("\"" + field + "\" must be a number, got None.");
     }
     if (node.isBoolean() || !node.isNumber()) {
       throw invalid("\"" + field + "\" must be a number, got " + PythonRepr.of(node) + ".");
     }
-    double value = node.doubleValue();
-    if (!Double.isFinite(value)) {
+    if (node.isFloatingPointNumber() && !Double.isFinite(node.doubleValue())) {
       throw invalid("\"" + field + "\" must be a number, got " + PythonRepr.of(node) + ".");
     }
-    if (value < 0) {
+    BigDecimal value = node.decimalValue();
+    if (value.signum() < 0) {
       throw invalid("\"" + field + "\" must be zero or positive, got " + PythonRepr.of(node) + ".");
     }
     return value;

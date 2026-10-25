@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.aether.ms_calculator.calculator.services.GasCatalogService;
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
+import com.aether.ms_calculator.shared.persistence.postgres.entities.GasEntity;
+import com.aether.ms_calculator.shared.persistence.postgres.repositories.GasRepository;
 import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,12 +31,13 @@ class CalculatorGasesControllerTests {
   private static final String BEARER_NO_GAS = "Bearer employee-without-gas";
   private static final String BEARER_INVALID = "Bearer invalid";
 
-  private final GasCatalogService gasCatalogService = mock(GasCatalogService.class);
+  private final GasRepository gasRepository = mock(GasRepository.class);
   private final JwtTokenProvider jwtTokenProvider = mock(JwtTokenProvider.class);
   private MockMvc mockMvc;
 
   @BeforeEach
   void setUp() {
+    GasCatalogService gasCatalogService = new GasCatalogService(gasRepository);
     mockMvc = CalculatorMockMvcSupport.gasCatalogMockMvc(KEY, jwtTokenProvider, gasCatalogService);
     when(jwtTokenProvider.resolveToken(any(HttpServletRequest.class)))
         .thenAnswer(
@@ -94,15 +97,13 @@ class CalculatorGasesControllerTests {
 
   @Test
   void gases_withCalculatorGas_returnsFullCatalog() throws Exception {
-    when(gasCatalogService.listGases())
+    when(gasRepository.findAll())
         .thenReturn(
             List.of(
-                new com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO(
-                    1, "Carbon dioxide", "CO2", false, new BigDecimal("1")),
-                new com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO(
-                    2, "Methane", "CH4", false, new BigDecimal("28")),
-                new com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO(
-                    4, "Biogenic carbon dioxide", "CO2(b)", true, new BigDecimal("1"))));
+                new GasEntity(1, "Carbon dioxide", "CO2", false, new BigDecimal("1"), null),
+                new GasEntity(2, "Methane", "CH4", false, new BigDecimal("28"), null),
+                new GasEntity(
+                    4, "Biogenic carbon dioxide", "CO2(b)", true, new BigDecimal("1"), null)));
 
     mockMvc
         .perform(get("/calculator/gases").header("Authorization", BEARER_GAS))
@@ -119,9 +120,22 @@ class CalculatorGasesControllerTests {
 
   @Test
   void gases_emptyCatalog_returnsEmptyArray() throws Exception {
-    when(gasCatalogService.listGases()).thenReturn(List.of());
+    when(gasRepository.findAll()).thenReturn(List.of());
 
     mockMvc
+        .perform(get("/calculator/gases").header("Authorization", BEARER_GAS))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(0)));
+  }
+
+  @Test
+  void gases_unconfiguredInternalKey_withJwt_returns200() throws Exception {
+    when(gasRepository.findAll()).thenReturn(List.of());
+    MockMvc unconfigured =
+        CalculatorMockMvcSupport.gasCatalogMockMvc(
+            "", jwtTokenProvider, new GasCatalogService(gasRepository));
+
+    unconfigured
         .perform(get("/calculator/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));

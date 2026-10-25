@@ -7,8 +7,7 @@ import com.aether.ms_calculator.shared.services.MessageService;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTDecodeException;
-import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -115,7 +114,7 @@ public class JwtTokenProvider {
 
     try {
       return verifier.verify(token);
-    } catch (JWTDecodeException | TokenExpiredException e) {
+    } catch (JWTVerificationException e) {
       throw new UnauthorizedException("exception.jwt.invalid-or-expired");
     }
   }

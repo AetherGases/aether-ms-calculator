@@ -13,7 +13,7 @@ public class ReductionForecastInputDTO {
   private JsonNode years;
 
   @JsonProperty("current_emission")
-  private CurrentEmissionInputDTO currentEmission;
+  private JsonNode currentEmission;
 
   @JsonProperty("green_gas")
   private JsonNode greenGas;
@@ -29,7 +29,7 @@ public class ReductionForecastInputDTO {
     return years;
   }
 
-  public CurrentEmissionInputDTO getCurrentEmission() {
+  public JsonNode getCurrentEmission() {
     return currentEmission;
   }
 

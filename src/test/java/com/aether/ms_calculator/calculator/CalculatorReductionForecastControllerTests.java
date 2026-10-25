@@ -2,6 +2,7 @@ package com.aether.ms_calculator.calculator;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 class CalculatorReductionForecastControllerTests {
 
@@ -152,6 +154,16 @@ class CalculatorReductionForecastControllerTests {
   }
 
   @Test
+  void forecast_withInvalidJwt_returns401() throws Exception {
+    postForecast(
+            BEARER_INVALID,
+            "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":1,\"scope\":1},\"green_gas\":4}")
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.error_code").value("unauthorized"));
+    verifyNoInteractions(gasRepository);
+  }
+
+  @Test
   void forecast_withJwtMissingCalculatorGas_returns403() throws Exception {
     mockMvc
         .perform(
@@ -162,6 +174,28 @@ class CalculatorReductionForecastControllerTests {
                     "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":1,\"scope\":1},\"green_gas\":4}"))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"));
+    verifyNoInteractions(gasRepository);
+  }
+
+  @Test
+  void forecast_unconfiguredInternalKey_withJwt_returns200() throws Exception {
+    ReductionForecastService service =
+        new ReductionForecastService(
+            gasRepository,
+            new com.aether.ms_calculator.calculator.domain.ReductionForecastValidator(),
+            new com.aether.ms_calculator.calculator.domain.ReductionForecastCalculator());
+    MockMvc unconfigured =
+        CalculatorMockMvcSupport.reductionForecastMockMvc("", jwtTokenProvider, service);
+
+    unconfigured
+        .perform(
+            post("/calculator/reduction/forecast")
+                .header("Authorization", BEARER_GAS)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.reduction_co2e").value(10));
   }
 
   @Test
@@ -241,16 +275,119 @@ class CalculatorReductionForecastControllerTests {
   void forecast_unknownGasId_returns400() throws Exception {
     when(gasRepository.findById(99)).thenReturn(Optional.empty());
 
-    String body =
-        "{\"years\":1,\"current_emission\":{\"gas\":99,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}";
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":99,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}");
+  }
 
-    mockMvc
-        .perform(
-            post("/calculator/reduction/forecast")
-                .header("Authorization", BEARER_GAS)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body))
+  @Test
+  void forecast_yearsOne_appliesFormulaOnce() throws Exception {
+    postForecast(
+            BEARER_GAS,
+            "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.future_emission.volume_co2e").value(10))
+        .andExpect(jsonPath("$.reduction_co2e").value(10));
+  }
+
+  @Test
+  void forecast_greenGwpLargerThanCurrent_keepsFullFossilReduction() throws Exception {
+    when(gasRepository.findById(5))
+        .thenReturn(
+            Optional.of(
+                new GasEntity(
+                    5, "Heavy biogenic", "X(b)", true, new BigDecimal("56"), null)));
+
+    postForecast(
+            BEARER_GAS,
+            "{\"years\":2,\"current_emission\":{\"gas\":2,\"volume_co2e\":10,\"scope\":1},\"green_gas\":5}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.future_emission.volume_co2e").value(40))
+        .andExpect(jsonPath("$.reduction_co2e").value(20));
+  }
+
+  @Test
+  void forecast_yearsZero_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":0,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_yearsNegative_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":-1,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_yearsFloat_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1.0,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_yearsString_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":\"5\",\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_negativeVolume_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":-1,\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_objectVolume_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":{},\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_booleanGasId_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":true,\"volume_co2e\":10,\"scope\":1},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_scopeZero_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":0},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_scopeFour_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":4},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_scopeOverflowsInt_returns400() throws Exception {
+    expectValidationError(
+        "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":10,\"scope\":4294967297},\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_currentEmissionArray_returns400WithEnvelope() throws Exception {
+    expectValidationError("{\"years\":1,\"current_emission\":[],\"green_gas\":4}");
+  }
+
+  @Test
+  void forecast_malformedJson_returns400WithEnvelope() throws Exception {
+    postForecast(BEARER_GAS, "{")
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error_code").value("validation_error"));
+  }
+
+  private void expectValidationError(String body) throws Exception {
+    postForecast(BEARER_GAS, body)
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error_code").value("validation_error"));
+  }
+
+  private ResultActions postForecast(String bearer, String body) throws Exception {
+    return mockMvc.perform(
+        post("/calculator/reduction/forecast")
+            .header("Authorization", bearer)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body));
   }
 }

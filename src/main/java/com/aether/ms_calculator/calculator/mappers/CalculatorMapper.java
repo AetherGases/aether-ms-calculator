@@ -4,7 +4,6 @@ import com.aether.ms_calculator.calculator.domain.PaybackResult;
 import com.aether.ms_calculator.calculator.domain.RoiResult;
 import com.aether.ms_calculator.calculator.domain.ReductionForecastResult;
 import com.aether.ms_calculator.calculator.dto.input.CalculateInvestmentInputDTO;
-import com.aether.ms_calculator.calculator.dto.input.CurrentEmissionInputDTO;
 import com.aether.ms_calculator.calculator.dto.input.ReductionForecastInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculatePaybackOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculateRoiOutputDTO;
@@ -28,15 +27,7 @@ public final class CalculatorMapper {
     ObjectNode node = JACKSON2.createObjectNode();
     setIfPresent(node, "years", input.getYears());
     setIfPresent(node, "green_gas", input.getGreenGas());
-    CurrentEmissionInputDTO current = input.getCurrentEmission();
-    if (current != null) {
-      ObjectNode currentNode = JACKSON2.createObjectNode();
-      setIfPresent(currentNode, "gas", current.getGas());
-      setIfPresent(currentNode, "volume_co2e", current.getVolumeCo2e());
-      setIfPresent(currentNode, "scope", current.getScope());
-      current.getUnknownFields().forEach((name, value) -> setIfPresent(currentNode, name, value));
-      node.set("current_emission", currentNode);
-    }
+    setIfPresent(node, "current_emission", input.getCurrentEmission());
     input.getUnknownFields().forEach((name, value) -> setIfPresent(node, name, value));
     return node;
   }

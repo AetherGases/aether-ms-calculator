@@ -1,5 +1,6 @@
 package com.aether.ms_calculator.calculator.services;
 
+import com.aether.ms_calculator.calculator.domain.CatalogGas;
 import com.aether.ms_calculator.calculator.domain.ReductionForecastCalculator;
 import com.aether.ms_calculator.calculator.domain.ReductionForecastParsed;
 import com.aether.ms_calculator.calculator.domain.ReductionForecastResult;
@@ -50,7 +51,10 @@ public class ReductionForecastService {
     }
 
     ReductionForecastResult result =
-        reductionForecastCalculator.calculate(parsed, currentGas, greenGas);
+        reductionForecastCalculator.calculate(
+            parsed,
+            new CatalogGas(currentGas.getId(), currentGas.getGwp()),
+            new CatalogGas(greenGas.getId(), greenGas.getGwp()));
     return CalculatorMapper.toForecastOutput(result);
   }
 }

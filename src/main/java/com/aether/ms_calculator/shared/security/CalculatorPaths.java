@@ -11,6 +11,10 @@ public final class CalculatorPaths {
   }
 
   public static boolean requiresCalculatorGasAuthority(String path) {
-    return "/calculator/gases".equals(path) || "/calculator/reduction/forecast".equals(path);
+    return isCalculatorPath(path) && !isAuthenticationKeyRoute(path);
+  }
+
+  static boolean isCalculatorPath(String path) {
+    return path != null && (path.equals("/calculator") || path.startsWith("/calculator/"));
   }
 }

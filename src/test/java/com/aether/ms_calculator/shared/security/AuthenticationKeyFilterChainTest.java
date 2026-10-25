@@ -94,6 +94,18 @@ class AuthenticationKeyFilterChainTest {
   }
 
   @Test
+  void roi_jwtWithoutAuthenticationKey_returns401() throws Exception {
+    mockMvc
+        .perform(
+            post("/calculator/roi")
+                .header("Authorization", "Bearer employee-with-gas")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(WORKED_EXAMPLE))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.error_code").value("unauthorized"));
+  }
+
+  @Test
   void roi_matchingKey_ignoresInvalidBearer() throws Exception {
     mockMvc
         .perform(

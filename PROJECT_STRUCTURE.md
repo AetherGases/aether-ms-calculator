@@ -115,8 +115,10 @@ ROI and payback share `CalculateInvestmentInputDTO`. Unknown JSON fields
 are kept on that input (Jackson `@JsonAnySetter`) so domain validation can
 reject them with the hub message. `capex` and `wacc_monthly` stay
 `JsonNode` **fields** on the DTOs so the original JSON tokens are echoed
-(`150`, not `150.0`). That is the only allowed use of `JsonNode` in the
-HTTP layer.
+(`150`, not `150.0`). Forecast input uses the same `JsonNode` fields
+(`years`, `current_emission`, `green_gas`) so unknown types reach domain
+validation instead of failing Jackson binding. That is the only allowed
+use of `JsonNode` in the HTTP layer.
 
 `CalculatorMapper` is the only place that turns the input DTO into the
 domain request node and domain results into output DTOs. Do not rebuild
@@ -126,6 +128,8 @@ JSON maps in the controller or service.
 
 - `POST /calculator/roi`
 - `POST /calculator/payback`
+- `GET /calculator/gases`
+- `POST /calculator/reduction/forecast`
 
 ---
 
@@ -249,12 +253,18 @@ Ask which class when that is unclear.
 - Missing or wrong key → `401` via `UnauthorizedException` and
   `GlobalExceptionHandler`. Do not run validation before that check.
 - Unconfigured key is a server fault, not a client validation error.
-- Do not bind a user or company from the JSON body. These routes are
-  service-to-service; the hub holds identity.
+  It 503s only roi/payback. Forecast and gas listing must not depend on
+  `INTERNAL_AUTHENTICATION_KEY`.
+- `GET /calculator/gases` and `POST /calculator/reduction/forecast`
+  require `Authorization: Bearer <jwt>` with authority `calculator:gas`.
+  `JwtTokenFilter` skips only roi and payback. Other `/calculator/**`
+  paths require that permission (deny-by-default).
+- Do not bind a user or company from the JSON body. Investment routes are
+  service-to-service; forecast identity stays in the JWT.
 - `/api/**` stays on the shared JWT chain. `/calculator/**` is `permitAll` in
-  `SecurityConfig` **because** the internal-key filter authenticates those
-  POSTs. Do not mark `/calculator/**` as `authenticated()` unless the
-  filter is removed.
+  `SecurityConfig` **because** the filters authenticate those routes
+  (internal key on roi/payback, JWT on gases/forecast). Do not mark
+  `/calculator/**` as `authenticated()` unless those filters are removed.
 - Unexpected failures: log the cause; return a stable client error. Do not
   leak stack traces in the body.
 
@@ -283,8 +293,9 @@ Ask which class when that is unclear.
 
 - **PROJECT_STRUCTURE.md** — this file: how to change the service.
 - **`shared.docs.CalculatorControllerDocs`** — OpenAPI for calculator
-  routes (`Roi` / `Payback` nested interfaces; same role as
-  `CloudinaryControllerDocs`).
+  routes (`Roi` / `Payback` / `Gases` / `ReductionForecast` nested
+  interfaces; same role as `CloudinaryControllerDocs`). Gas listing uses
+  `@ArraySchema`.
 - **README.md** — how to run and call it (add or update when onboarding
   text changes; keep structure rules here).
 - **`.scratch/`** — specs and tickets; not a substitute for tests or this
@@ -314,8 +325,11 @@ Do not commit secrets. Do not put a real `INTERNAL_AUTHENTICATION_KEY` or
 - Do not put `@RestController` types in `shared/` (docs interfaces are not
   controllers).
 - Do not put JPA repositories inside `calculator/`.
-- Do not authenticate calculator POSTs with JWT instead of
-  `authentication-key`.
+- Do not authenticate ROI/payback with JWT instead of `authentication-key`.
+  Forecast and gas listing use JWT + `calculator:gas`; do not put those
+  two routes on the internal key.
+- Do not put JPA entities in `calculator.domain` forecast math. Pass
+  catalog values (`CatalogGas` id + gwp).
 - Do not invent request fields or result fields the hub contract omitted.
 - Do not bind calculator routes to `JsonNode` / `ObjectNode`. Use
   `calculator.dto.input` and `calculator.dto.output`.
