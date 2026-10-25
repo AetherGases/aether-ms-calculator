@@ -21,6 +21,15 @@ public class JwtTokenFilter extends OncePerRequestFilter {
   private final HandlerExceptionResolver handlerExceptionResolver;
 
   @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) {
+    return isCalculatorPath(request.getServletPath()) || isCalculatorPath(request.getRequestURI());
+  }
+
+  static boolean isCalculatorPath(String path) {
+    return path != null && (path.equals("/calculator") || path.startsWith("/calculator/"));
+  }
+
+  @Override
   public void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filter)
       throws IOException, ServletException {
     try{

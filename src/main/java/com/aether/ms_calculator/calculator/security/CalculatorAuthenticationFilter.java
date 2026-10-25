@@ -30,8 +30,11 @@ public class CalculatorAuthenticationFilter extends OncePerRequestFilter {
     if (!"POST".equalsIgnoreCase(request.getMethod())) {
       return true;
     }
-    String path = request.getRequestURI();
-    return !"/calculator/roi".equals(path) && !"/calculator/payback".equals(path);
+    return !isInvestmentPath(request.getServletPath()) && !isInvestmentPath(request.getRequestURI());
+  }
+
+  static boolean isInvestmentPath(String path) {
+    return "/calculator/roi".equals(path) || "/calculator/payback".equals(path);
   }
 
   @Override
@@ -47,7 +50,7 @@ public class CalculatorAuthenticationFilter extends OncePerRequestFilter {
     }
 
     String configuredKey = properties.getInternalKey();
-    if (configuredKey.isEmpty()) {
+    if (configuredKey == null || configuredKey.isEmpty()) {
       writeServiceUnavailable(response);
       return;
     }
@@ -62,6 +65,7 @@ public class CalculatorAuthenticationFilter extends OncePerRequestFilter {
 
   private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
     response.setStatus(HttpStatus.UNAUTHORIZED.value());
+    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     Map<String, String> body = new LinkedHashMap<>();
     body.put("error_code", "unauthorized");
@@ -71,6 +75,7 @@ public class CalculatorAuthenticationFilter extends OncePerRequestFilter {
 
   private void writeServiceUnavailable(HttpServletResponse response) throws IOException {
     response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
+    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     Map<String, String> body = new LinkedHashMap<>();
     body.put("message", "Calculator authentication is not configured.");

@@ -45,8 +45,8 @@ public class SecurityConfig {
     return http
         .httpBasic(AbstractHttpConfigurer::disable)
         .csrf(AbstractHttpConfigurer::disable)
-        .addFilterBefore(calculatorAuthenticationFilter, JwtTokenFilter.class)
         .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(calculatorAuthenticationFilter, JwtTokenFilter.class)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         )

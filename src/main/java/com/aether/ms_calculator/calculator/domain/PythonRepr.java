@@ -24,7 +24,17 @@ final class PythonRepr {
         if (node.isArray()) {
             return formatArray((ArrayNode) node);
         }
+        if (node.isObject()) {
+            return formatObject(node);
+        }
         return node.toString();
+    }
+
+    private static String formatObject(JsonNode object) {
+        StringJoiner joiner = new StringJoiner(", ", "{", "}");
+        object.fieldNames()
+                .forEachRemaining(name -> joiner.add(quote(name) + ": " + of(object.get(name))));
+        return joiner.toString();
     }
 
     private static String formatArray(ArrayNode array) {
@@ -49,23 +59,7 @@ final class PythonRepr {
         if (value == Double.NEGATIVE_INFINITY) {
             return "-inf";
         }
-        return trimFloat(value);
-    }
-
-    private static String trimFloat(double value) {
-        String text = Double.toString(value);
-        if (text.contains("E") || text.contains("e")) {
-            return text;
-        }
-        if (text.contains(".")) {
-            while (text.endsWith("0")) {
-                text = text.substring(0, text.length() - 1);
-            }
-            if (text.endsWith(".")) {
-                text = text.substring(0, text.length() - 1);
-            }
-        }
-        return text;
+        return Double.toString(value);
     }
 
     private static String quote(String value) {

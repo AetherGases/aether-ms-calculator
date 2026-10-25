@@ -5,7 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,7 +33,9 @@ class CalculatorHttpContractTest {
         .andExpect(jsonPath("$.vp_total").value(200.0))
         .andExpect(jsonPath("$.vpl").value(50.0))
         .andExpect(jsonPath("$.roi_percent").value(33.33))
-        .andExpect(jsonPath("$.viable").value(true));
+        .andExpect(jsonPath("$.viable").value(true))
+        .andExpect(content().string(containsString("\"capex\":150")))
+        .andExpect(content().string(not(containsString("\"capex\":150.0"))));
   }
 
   @Test
@@ -65,6 +70,49 @@ class CalculatorHttpContractTest {
             .content("{}"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.message").value("\"capex\" must be a number, got None."));
+  }
+
+  @Test
+  void roi_booleanCapexRejected() throws Exception {
+    mockMvc.perform(post("/calculator/roi")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"capex\":true,\"wacc_monthly\":0.25,\"cash_flows\":[125]}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error_code").value("validation_error"))
+        .andExpect(jsonPath("$.message").value("\"capex\" must be a number, got True."));
+  }
+
+  @Test
+  void roi_nonFiniteCapexRejected() throws Exception {
+    mockMvc.perform(post("/calculator/roi")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"capex\":1e309,\"wacc_monthly\":0.25,\"cash_flows\":[125]}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("\"capex\" must be a number, got inf."));
+  }
+
+  @Test
+  void roi_waccOnePointZeroUsesPythonFloatRepr() throws Exception {
+    mockMvc.perform(post("/calculator/roi")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"capex\":150,\"wacc_monthly\":1.0,\"cash_flows\":[125]}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value(
+            "\"wacc_monthly\" must be the monthly discount rate as a decimal between 0 and 1 (0.01 is 1% a month), got 1.0. An annual rate must be converted before it is sent."));
+  }
+
+  @Test
+  void roi_cashFlowsObjectUsesPythonDictRepr() throws Exception {
+    mockMvc.perform(post("/calculator/roi")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":{\"1\":125}}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value(
+            "\"cash_flows\" must be a list of monthly cash flows, oldest first, got {'1': 125}."));
   }
 
   @Test
@@ -106,6 +154,20 @@ class CalculatorHttpContractTest {
   }
 
   @Test
+  void roi_monthlyCashFlowDiscountedOverSixtyMonths() throws Exception {
+    String body = "{\"capex\":150000,\"wacc_monthly\":0.01,\"monthly_cash_flow\":5000}";
+    mockMvc.perform(post("/calculator/roi")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.months").value(60))
+        .andExpect(jsonPath("$.vp_total").value(224775.19))
+        .andExpect(jsonPath("$.roi_percent").value(49.85))
+        .andExpect(jsonPath("$.viable").value(true));
+  }
+
+  @Test
   void payback_workedExample() throws Exception {
     String body = "{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";
     mockMvc.perform(post("/calculator/payback")
@@ -127,6 +189,29 @@ class CalculatorHttpContractTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.payback_months").value(-1))
         .andExpect(jsonPath("$.viable").value(false));
+  }
+
+  @Test
+  void payback_exactRecoveryMonthOne() throws Exception {
+    String body = "{\"capex\":100,\"wacc_monthly\":0.25,\"cash_flows\":[125]}";
+    mockMvc.perform(post("/calculator/payback")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.payback_months").value(1));
+  }
+
+  @Test
+  void payback_waccZero_coversInMonthTwo() throws Exception {
+    String body = "{\"capex\":250,\"wacc_monthly\":0,\"cash_flows\":[100,200,300]}";
+    mockMvc.perform(post("/calculator/payback")
+            .header(AUTH_HEADER, KEY)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.payback_months").value(2))
+        .andExpect(jsonPath("$.vp_total").value(600.0));
   }
 
   @Test

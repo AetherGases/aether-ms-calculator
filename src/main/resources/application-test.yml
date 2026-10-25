@@ -1,5 +1,3 @@
-INTERNAL_AUTHENTICATION_KEY: test-internal-calculator-key
-
 spring:
   application:
     name: core-api-test
@@ -44,7 +42,7 @@ spring:
 
 calculator:
   authentication:
-    internal-key: ${INTERNAL_AUTHENTICATION_KEY}
+    internal-key: test-internal-calculator-key
 
 server:
   port: 0
