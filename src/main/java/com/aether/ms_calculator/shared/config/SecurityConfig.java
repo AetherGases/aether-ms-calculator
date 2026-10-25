@@ -1,5 +1,6 @@
 package com.aether.ms_calculator.shared.config;
 
+import com.aether.ms_calculator.calculator.security.CalculatorAuthenticationFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 public class SecurityConfig {
   private final JwtTokenProvider tokenProvider;
   private final HandlerExceptionResolver handlerExceptionResolver;
+  private final CalculatorAuthenticationFilter calculatorAuthenticationFilter;
   public static final String SECURITY = "BearerAuth";
 
   @Bean
@@ -43,6 +45,7 @@ public class SecurityConfig {
     return http
         .httpBasic(AbstractHttpConfigurer::disable)
         .csrf(AbstractHttpConfigurer::disable)
+        .addFilterBefore(calculatorAuthenticationFilter, JwtTokenFilter.class)
         .addFilterBefore(customFilter, UsernamePasswordAuthenticationFilter.class)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -58,6 +61,7 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
+                .requestMatchers("/calculator/**").permitAll()
                 .requestMatchers(
                     "/api/**"
                 ).authenticated()

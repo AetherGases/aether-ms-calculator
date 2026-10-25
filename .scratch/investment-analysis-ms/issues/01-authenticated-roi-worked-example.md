@@ -6,10 +6,10 @@
 
 **Status:** ready-for-agent
 
-- [ ] `POST /calculator/roi` with matching `authentication-key` and the worked example returns 200 `{ "capex": 150, "wacc_monthly": 0.25, "months": 60, "vp_total": 200.0, "vpl": 50.0, "roi_percent": 33.33, "viable": true }` (`capex` echoed as the integer 150)
-- [ ] Missing header is 401 `{ "error_code": "unauthorized", "message": "Missing authentication key." }` even when the env is empty
-- [ ] Wrong header is 401 `{ "error_code": "unauthorized", "message": "Invalid authentication key." }`
-- [ ] Header present and env empty is 503 `{ "message": "Calculator authentication is not configured." }` with no `error_code`
-- [ ] Comparison of the key is constant-time; boot does not fail when the env is unset; `INTERNAL_AUTHENTICATION_KEY` is named in the example env
-- [ ] HTTP slice tests cover the 200 and the auth cases without Postgres, Mongo, or Redis; the existing context-load test is unchanged
-- [ ] These routes do not require Bearer JWT; existing `/api/**` JWT behaviour is untouched
+- [x] `POST /calculator/roi` with matching `authentication-key` and the worked example returns 200 `{ "capex": 150, "wacc_monthly": 0.25, "months": 60, "vp_total": 200.0, "vpl": 50.0, "roi_percent": 33.33, "viable": true }` (`capex` echoed as the integer 150)
+- [x] Missing header is 401 `{ "error_code": "unauthorized", "message": "Missing authentication key." }` even when the env is empty
+- [x] Wrong header is 401 `{ "error_code": "unauthorized", "message": "Invalid authentication key." }`
+- [x] Header present and env empty is 503 `{ "message": "Calculator authentication is not configured." }` with no `error_code`
+- [x] Comparison of the key is constant-time; boot does not fail when the env is unset; `INTERNAL_AUTHENTICATION_KEY` is named in the example env
+- [x] HTTP slice tests cover the 200 and the auth cases without Postgres, Mongo, or Redis; the existing context-load test is unchanged
+- [x] These routes do not require Bearer JWT; existing `/api/**` JWT behaviour is untouched

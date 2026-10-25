@@ -1,3 +1,5 @@
+INTERNAL_AUTHENTICATION_KEY: test-internal-calculator-key
+
 spring:
   application:
     name: core-api-test
@@ -39,6 +41,10 @@ spring:
     uri: ${MONGO_URL}
     auto-index-creation: true
 
+
+calculator:
+  authentication:
+    internal-key: ${INTERNAL_AUTHENTICATION_KEY}
 
 server:
   port: 0
