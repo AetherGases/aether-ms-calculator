@@ -8,28 +8,55 @@ class CalculatorPathsTest {
 
   @Test
   void investmentRoutesStayOnAuthenticationKey() {
-    assertThat(CalculatorPaths.isAuthenticationKeyRoute("/calculator/roi")).isTrue();
-    assertThat(CalculatorPaths.isAuthenticationKeyRoute("/calculator/payback")).isTrue();
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/calculator/roi")).isFalse();
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/calculator/payback")).isFalse();
+    assertThat(CalculatorPaths.isAuthenticationKeyRoute(CalculatorPaths.ROI_PATH)).isTrue();
+    assertThat(CalculatorPaths.isAuthenticationKeyRoute(CalculatorPaths.PAYBACK_PATH)).isTrue();
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority(CalculatorPaths.ROI_PATH)).isFalse();
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority(CalculatorPaths.PAYBACK_PATH))
+        .isFalse();
+    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority(CalculatorPaths.ROI_PATH)).isFalse();
+    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority(CalculatorPaths.PAYBACK_PATH))
+        .isFalse();
   }
 
   @Test
   void gasesAndForecastRequireCalculatorGas() {
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/calculator/gases")).isTrue();
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/calculator/reduction/forecast"))
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority(CalculatorPaths.GASES_PATH)).isTrue();
+    assertThat(
+            CalculatorPaths.requiresCalculatorGasAuthority(
+                CalculatorPaths.REDUCTION_FORECAST_PATH))
         .isTrue();
+    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority(CalculatorPaths.GASES_PATH))
+        .isFalse();
+    assertThat(
+            CalculatorPaths.requiresCalculatorRoiAuthority(
+                CalculatorPaths.REDUCTION_FORECAST_PATH))
+        .isFalse();
   }
 
   @Test
-  void unknownCalculatorPathRequiresCalculatorGas() {
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/calculator/other")).isTrue();
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/calculator/gases/extra")).isTrue();
+  void costReductionForecastRequiresCalculatorRoiNotGas() {
+    assertThat(
+            CalculatorPaths.requiresCalculatorRoiAuthority(
+                CalculatorPaths.COST_REDUCTION_FORECAST_PATH))
+        .isTrue();
+    assertThat(
+            CalculatorPaths.requiresCalculatorGasAuthority(
+                CalculatorPaths.COST_REDUCTION_FORECAST_PATH))
+        .isFalse();
+  }
+
+  @Test
+  void unknownGasesOrReductionPathRequiresCalculatorGas() {
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/reduction/other")).isTrue();
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/gases/extra")).isTrue();
+    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority("/reduction/other")).isFalse();
   }
 
   @Test
   void nonCalculatorPathsDoNotRequireCalculatorGas() {
     assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/api/auth/login")).isFalse();
     assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/v3/api-docs")).isFalse();
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/other")).isFalse();
+    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority("/api/auth/login")).isFalse();
   }
 }

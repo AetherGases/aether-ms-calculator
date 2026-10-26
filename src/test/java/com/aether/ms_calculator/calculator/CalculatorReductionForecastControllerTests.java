@@ -31,6 +31,7 @@ class CalculatorReductionForecastControllerTests {
   private static final String AUTH_HEADER = AuthenticationKeyFilter.HEADER_NAME;
   private static final String KEY = CalculatorMockMvcSupport.TEST_INTERNAL_KEY;
   private static final String BEARER_GAS = "Bearer employee-with-gas";
+  private static final String BEARER_ROI = "Bearer employee-with-roi";
   private static final String BEARER_NO_GAS = "Bearer employee-without-gas";
   private static final String BEARER_INVALID = "Bearer invalid";
 
@@ -60,6 +61,7 @@ class CalculatorReductionForecastControllerTests {
               return header.substring("Bearer ".length());
             });
     when(jwtTokenProvider.validateToken("employee-with-gas")).thenReturn(true);
+    when(jwtTokenProvider.validateToken("employee-with-roi")).thenReturn(true);
     when(jwtTokenProvider.validateToken("employee-without-gas")).thenReturn(true);
     when(jwtTokenProvider.validateToken("invalid"))
         .thenThrow(
@@ -75,6 +77,12 @@ class CalculatorReductionForecastControllerTests {
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
                 "other@aether.test", "", List.of(new SimpleGrantedAuthority("calculator"))));
+    when(jwtTokenProvider.getAuthentication("employee-with-roi"))
+        .thenReturn(
+            new UsernamePasswordAuthenticationToken(
+                "roi@aether.test",
+                "",
+                List.of(new SimpleGrantedAuthority("calculator:roi"))));
 
     stubSeededCatalog();
   }
@@ -101,7 +109,7 @@ class CalculatorReductionForecastControllerTests {
 
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -119,7 +127,7 @@ class CalculatorReductionForecastControllerTests {
 
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -134,7 +142,7 @@ class CalculatorReductionForecastControllerTests {
   void forecast_withoutJwt_returns401() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":1,\"scope\":1},\"green_gas\":4}"))
@@ -145,7 +153,7 @@ class CalculatorReductionForecastControllerTests {
   void forecast_withAuthenticationKeyOnly_returns401() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
@@ -167,13 +175,28 @@ class CalculatorReductionForecastControllerTests {
   void forecast_withJwtMissingCalculatorGas_returns403() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_NO_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":1,\"scope\":1},\"green_gas\":4}"))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"));
+    verifyNoInteractions(gasRepository);
+  }
+
+  @Test
+  void forecast_withCalculatorRoiOnly_returns403() throws Exception {
+    mockMvc
+        .perform(
+            post("/reduction/forecast")
+                .header("Authorization", BEARER_ROI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":1,\"scope\":1},\"green_gas\":4}"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error_code").value("forbidden"))
+        .andExpect(jsonPath("$.message").value("Missing calculator:gas permission."));
     verifyNoInteractions(gasRepository);
   }
 
@@ -189,7 +212,7 @@ class CalculatorReductionForecastControllerTests {
 
     unconfigured
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
@@ -202,7 +225,7 @@ class CalculatorReductionForecastControllerTests {
   void forecast_validJwtBadBody_returns400Not401() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
@@ -217,7 +240,7 @@ class CalculatorReductionForecastControllerTests {
 
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -232,7 +255,7 @@ class CalculatorReductionForecastControllerTests {
 
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -248,7 +271,7 @@ class CalculatorReductionForecastControllerTests {
 
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -263,7 +286,7 @@ class CalculatorReductionForecastControllerTests {
 
     mockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -385,7 +408,7 @@ class CalculatorReductionForecastControllerTests {
 
   private ResultActions postForecast(String bearer, String body) throws Exception {
     return mockMvc.perform(
-        post("/calculator/reduction/forecast")
+        post("/reduction/forecast")
             .header("Authorization", bearer)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body));

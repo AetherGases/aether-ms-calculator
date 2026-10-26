@@ -7,10 +7,14 @@ import org.springframework.http.HttpStatus;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ExceptionOutputDTO(
     String message,
-    HttpStatus status,
+    String status,
     @JsonProperty("error_code") String errorCode
 ) {
   public ExceptionOutputDTO(String message, HttpStatus status) {
-    this(message, status, null);
+    this(message, status.name(), null);
+  }
+
+  public ExceptionOutputDTO(String message, HttpStatus status, String errorCode) {
+    this(message, status.name(), errorCode);
   }
 }

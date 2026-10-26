@@ -126,10 +126,14 @@ JSON maps in the controller or service.
 
 ### HTTP surface
 
-- `POST /calculator/roi`
-- `POST /calculator/payback`
-- `GET /calculator/gases`
-- `POST /calculator/reduction/forecast`
+Kong already mounts this service at `/calculator/`. Controllers must not
+repeat that prefix; the paths below are what the process serves.
+
+- `POST /roi`
+- `POST /payback`
+- `GET /gases`
+- `POST /reduction/forecast`
+- `POST /cost-reduction/forecast` (camelCase body; JWT + `calculator:roi`)
 
 ---
 
@@ -247,24 +251,31 @@ Ask which class when that is unclear.
 
 ## 6. Identity and HTTP
 
-- `/calculator/roi` and `/calculator/payback` require header
-  `authentication-key` equal to `INTERNAL_AUTHENTICATION_KEY`. Same header
-  name and `shared.security` placement as `aether-ms-cloudinary`.
+- `/roi` and `/payback` require header `authentication-key` equal to
+  `INTERNAL_AUTHENTICATION_KEY`. Same header name and `shared.security`
+  placement as `aether-ms-cloudinary`.
 - Missing or wrong key → `401` via `UnauthorizedException` and
   `GlobalExceptionHandler`. Do not run validation before that check.
 - Unconfigured key is a server fault, not a client validation error.
   It 503s only roi/payback. Forecast and gas listing must not depend on
   `INTERNAL_AUTHENTICATION_KEY`.
-- `GET /calculator/gases` and `POST /calculator/reduction/forecast`
-  require `Authorization: Bearer <jwt>` with authority `calculator:gas`.
-  `JwtTokenFilter` skips only roi and payback. Other `/calculator/**`
-  paths require that permission (deny-by-default).
+- `GET /gases` and `POST /reduction/forecast` require
+  `Authorization: Bearer <jwt>` with authority `calculator:gas`.
+- `POST /cost-reduction/forecast` requires JWT with authority
+  `calculator:roi` (not `calculator:gas`). Internal `authentication-key` does
+  not satisfy that path.
+- `JwtTokenFilter` skips only roi and payback. Other calculator JWT
+  routes (`/gases`, `/reduction/**`) are deny-by-default: they require
+  `calculator:gas` unless `CalculatorPaths` marks them as `calculator:roi`
+  (`/cost-reduction/**` today).
 - Do not bind a user or company from the JSON body. Investment routes are
   service-to-service; forecast identity stays in the JWT.
-- `/api/**` stays on the shared JWT chain. `/calculator/**` is `permitAll` in
+- `/api/**` stays on the shared JWT chain. `/roi`, `/payback`, `/gases`,
+  `/reduction/**`, and `/cost-reduction/**` are `permitAll` in
   `SecurityConfig` **because** the filters authenticate those routes
-  (internal key on roi/payback, JWT on gases/forecast). Do not mark
-  `/calculator/**` as `authenticated()` unless those filters are removed.
+  (internal key on roi/payback, JWT on gases, gas forecast, and
+  cost-reduction forecast). Do not mark those matchers as
+  `authenticated()` unless those filters are removed.
 - Unexpected failures: log the cause; return a stable client error. Do not
   leak stack traces in the body.
 
@@ -293,8 +304,9 @@ Ask which class when that is unclear.
 
 - **PROJECT_STRUCTURE.md** — this file: how to change the service.
 - **`shared.docs.CalculatorControllerDocs`** — OpenAPI for calculator
-  routes (`Roi` / `Payback` / `Gases` / `ReductionForecast` nested
-  interfaces; same role as `CloudinaryControllerDocs`). Gas listing uses
+  routes (`Roi` / `Payback` / `Gases` / `ReductionForecast` /
+  `CostReductionForecast` nested interfaces; same role as
+  `CloudinaryControllerDocs`). Gas listing uses
   `@ArraySchema`.
 - **README.md** — how to run and call it (add or update when onboarding
   text changes; keep structure rules here).

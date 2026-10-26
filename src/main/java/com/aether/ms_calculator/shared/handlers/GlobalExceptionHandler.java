@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -40,12 +41,35 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ExceptionOutputDTO> handleHttpMessageNotReadable(
       HttpMessageNotReadableException ex) {
+    String message =
+        isWellFormedNonObjectBody(ex)
+            ? "The request must be a JSON object."
+            : "The request body is not valid JSON.";
+    return new ResponseEntity<>(
+        new ExceptionOutputDTO(message, HttpStatus.BAD_REQUEST, "validation_error"),
+        HttpStatus.BAD_REQUEST);
+  }
+
+  private static boolean isWellFormedNonObjectBody(HttpMessageNotReadableException ex) {
+    for (Throwable current = ex; current != null; current = current.getCause()) {
+      String name = current.getClass().getName();
+      if (name.endsWith(".MismatchedInputException")
+          || name.endsWith(".InvalidFormatException")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<ExceptionOutputDTO> handleHttpMediaTypeNotSupported(
+      HttpMediaTypeNotSupportedException ex) {
     return new ResponseEntity<>(
         new ExceptionOutputDTO(
-            "The request body is not valid JSON.",
-            HttpStatus.BAD_REQUEST,
-            "validation_error"),
-        HttpStatus.BAD_REQUEST);
+            "The Content-Type must be application/json.",
+            HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+            "unsupported_media_type"),
+        HttpStatus.UNSUPPORTED_MEDIA_TYPE);
   }
 
   @ExceptionHandler(NoResourceFoundException.class)
