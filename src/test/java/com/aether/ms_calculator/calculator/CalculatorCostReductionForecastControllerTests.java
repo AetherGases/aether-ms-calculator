@@ -33,7 +33,7 @@ class CalculatorCostReductionForecastControllerTests {
   private static final String BEARER_GAS = "Bearer employee-with-gas";
   private static final String BEARER_LEGACY = "Bearer employee-with-calculator";
   private static final String BEARER_INVALID = "Bearer invalid";
-  private static final String PATH = "/calculator/cost-reduction/forecast";
+  private static final String PATH = "/cost-reduction/forecast";
 
   private final JwtTokenProvider jwtTokenProvider = Mockito.mock(JwtTokenProvider.class);
   private MockMvc mockMvc;

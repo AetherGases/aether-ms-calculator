@@ -84,7 +84,7 @@ class AuthenticationKeyFilterChainTest {
   void roi_matchingKey_returnsWorkedExampleThroughSecurityChain() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(WORKED_EXAMPLE))
@@ -97,7 +97,7 @@ class AuthenticationKeyFilterChainTest {
   void roi_jwtWithoutAuthenticationKey_returns401() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header("Authorization", "Bearer employee-with-gas")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(WORKED_EXAMPLE))
@@ -109,7 +109,7 @@ class AuthenticationKeyFilterChainTest {
   void roi_matchingKey_ignoresInvalidBearer() throws Exception {
     mockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .header("Authorization", "Bearer not-a-jwt")
                 .contentType(MediaType.APPLICATION_JSON)

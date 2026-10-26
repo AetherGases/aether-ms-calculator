@@ -88,7 +88,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_textPlain_returns415Envelope() throws Exception {
     investmentMockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
@@ -102,7 +102,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void payback_textPlain_returns415Envelope() throws Exception {
     investmentMockMvc
         .perform(
-            post("/calculator/payback")
+            post("/payback")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
@@ -130,7 +130,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void reductionForecast_textPlainWithJwt_returns415Envelope() throws Exception {
     forecastMockMvc
         .perform(
-            post("/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(FORECAST_BODY))
@@ -144,7 +144,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_wrongKeyWithTextPlain_stillReturns401() throws Exception {
     investmentMockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, "wrong")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
@@ -156,7 +156,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_missingKeyWithTextPlain_stillReturns401() throws Exception {
     investmentMockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
         .andExpect(status().isUnauthorized())
@@ -178,7 +178,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_applicationJsonCharsetUtf8_stillSucceeds() throws Exception {
     investmentMockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.parseMediaType("application/json;charset=UTF-8"))
                 .content(ROI_BODY))
@@ -189,7 +189,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_applicationJson_stillReachesValidation() throws Exception {
     investmentMockMvc
         .perform(
-            post("/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))

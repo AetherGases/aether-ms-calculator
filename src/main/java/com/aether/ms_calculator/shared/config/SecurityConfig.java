@@ -69,7 +69,14 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
-                .requestMatchers("/calculator/**").permitAll()
+                .requestMatchers(
+                    "/roi",
+                    "/payback",
+                    "/gases",
+                    "/gases/**",
+                    "/reduction/**",
+                    "/cost-reduction/**")
+                .permitAll()
                 .requestMatchers(
                     "/api/**"
                 ).authenticated()

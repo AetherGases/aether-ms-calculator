@@ -9,14 +9,15 @@ class JwtTokenFilterCalculatorPathTest {
 
   @Test
   void shouldNotFilter_roiAndPayback() {
-    assertThat(JwtTokenFilter.shouldNotFilterPath("/calculator/roi")).isTrue();
-    assertThat(JwtTokenFilter.shouldNotFilterPath("/calculator/payback")).isTrue();
+    assertThat(JwtTokenFilter.shouldNotFilterPath(CalculatorPaths.ROI_PATH)).isTrue();
+    assertThat(JwtTokenFilter.shouldNotFilterPath(CalculatorPaths.PAYBACK_PATH)).isTrue();
   }
 
   @Test
   void shouldNotFilter_gasesForecastAndCostReduction() {
-    assertThat(JwtTokenFilter.shouldNotFilterPath("/calculator/gases")).isFalse();
-    assertThat(JwtTokenFilter.shouldNotFilterPath("/calculator/reduction/forecast")).isFalse();
+    assertThat(JwtTokenFilter.shouldNotFilterPath(CalculatorPaths.GASES_PATH)).isFalse();
+    assertThat(JwtTokenFilter.shouldNotFilterPath(CalculatorPaths.REDUCTION_FORECAST_PATH))
+        .isFalse();
     assertThat(JwtTokenFilter.shouldNotFilterPath(CalculatorPaths.COST_REDUCTION_FORECAST_PATH))
         .isFalse();
   }

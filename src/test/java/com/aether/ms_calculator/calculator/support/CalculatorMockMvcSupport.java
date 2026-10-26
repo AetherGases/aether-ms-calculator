@@ -168,12 +168,12 @@ public final class CalculatorMockMvcSupport {
   @Profile("calculator-auth-probe")
   static class AuthProbeController {
 
-    @PostMapping("/calculator/roi")
+    @PostMapping("/roi")
     Map<String, Object> roi() {
       return Map.of();
     }
 
-    @PostMapping("/calculator/payback")
+    @PostMapping("/payback")
     Map<String, Object> payback() {
       return Map.of();
     }
