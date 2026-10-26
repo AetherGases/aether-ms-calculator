@@ -50,7 +50,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         }
       }
 
-      enforceCalculatorGasAuthority(request);
+      enforceCalculatorAuthorities(request);
 
       filter.doFilter(request, response);
     } catch (UnauthorizedException | ForbiddenException e) {
@@ -60,28 +60,41 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
   }
 
-  private void enforceCalculatorGasAuthority(HttpServletRequest request) {
+  private void enforceCalculatorAuthorities(HttpServletRequest request) {
     String path = request.getServletPath();
     if (path == null || path.isEmpty()) {
       path = request.getRequestURI();
     }
-    if (!CalculatorPaths.requiresCalculatorGasAuthority(path)) {
+
+    if (CalculatorPaths.requiresCalculatorRoiAuthority(path)) {
+      enforceAuthority(
+          path,
+          CalculatorPaths.CALCULATOR_ROI_AUTHORITY,
+          "Missing calculator:roi permission.");
       return;
     }
 
+    if (CalculatorPaths.requiresCalculatorGasAuthority(path)) {
+      enforceAuthority(
+          path,
+          CalculatorPaths.CALCULATOR_GAS_AUTHORITY,
+          "Missing calculator:gas permission.");
+    }
+  }
+
+  private void enforceAuthority(String path, String requiredAuthority, String forbiddenMessage) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null || !authentication.isAuthenticated()) {
       throw UnauthorizedException.withLiteralMessage("Missing or invalid JWT.", "unauthorized");
     }
 
-    boolean hasGasAuthority =
+    boolean hasAuthority =
         authentication.getAuthorities().stream()
             .map(GrantedAuthority::getAuthority)
-            .anyMatch(CalculatorPaths.CALCULATOR_GAS_AUTHORITY::equals);
+            .anyMatch(requiredAuthority::equals);
 
-    if (!hasGasAuthority) {
-      throw ForbiddenException.withLiteralMessage(
-          "Missing calculator:gas permission.", "forbidden");
+    if (!hasAuthority) {
+      throw ForbiddenException.withLiteralMessage(forbiddenMessage, "forbidden");
     }
   }
 }

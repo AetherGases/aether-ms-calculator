@@ -130,6 +130,8 @@ JSON maps in the controller or service.
 - `POST /calculator/payback`
 - `GET /calculator/gases`
 - `POST /calculator/reduction/forecast`
+- `POST /calculator/cost-reduction/forecast` (camelCase body; JWT +
+  `calculator:roi`)
 
 ---
 
@@ -257,13 +259,19 @@ Ask which class when that is unclear.
   `INTERNAL_AUTHENTICATION_KEY`.
 - `GET /calculator/gases` and `POST /calculator/reduction/forecast`
   require `Authorization: Bearer <jwt>` with authority `calculator:gas`.
-  `JwtTokenFilter` skips only roi and payback. Other `/calculator/**`
-  paths require that permission (deny-by-default).
+- `POST /calculator/cost-reduction/forecast` requires JWT with authority
+  `calculator:roi` (not `calculator:gas`). Internal `authentication-key` does
+  not satisfy that path.
+- `JwtTokenFilter` skips only roi and payback. Other `/calculator/**` JWT
+  routes are deny-by-default: they require `calculator:gas` unless
+  `CalculatorPaths` marks them as `calculator:roi` (cost-reduction forecast
+  today).
 - Do not bind a user or company from the JSON body. Investment routes are
   service-to-service; forecast identity stays in the JWT.
 - `/api/**` stays on the shared JWT chain. `/calculator/**` is `permitAll` in
   `SecurityConfig` **because** the filters authenticate those routes
-  (internal key on roi/payback, JWT on gases/forecast). Do not mark
+  (internal key on roi/payback, JWT on gases, gas forecast, and
+  cost-reduction forecast). Do not mark
   `/calculator/**` as `authenticated()` unless those filters are removed.
 - Unexpected failures: log the cause; return a stable client error. Do not
   leak stack traces in the body.
@@ -293,8 +301,9 @@ Ask which class when that is unclear.
 
 - **PROJECT_STRUCTURE.md** — this file: how to change the service.
 - **`shared.docs.CalculatorControllerDocs`** — OpenAPI for calculator
-  routes (`Roi` / `Payback` / `Gases` / `ReductionForecast` nested
-  interfaces; same role as `CloudinaryControllerDocs`). Gas listing uses
+  routes (`Roi` / `Payback` / `Gases` / `ReductionForecast` /
+  `CostReductionForecast` nested interfaces; same role as
+  `CloudinaryControllerDocs`). Gas listing uses
   `@ArraySchema`.
 - **README.md** — how to run and call it (add or update when onboarding
   text changes; keep structure rules here).

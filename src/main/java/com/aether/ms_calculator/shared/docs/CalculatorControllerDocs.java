@@ -3,7 +3,9 @@ package com.aether.ms_calculator.shared.docs;
 import com.aether.ms_calculator.calculator.dto.input.CalculateInvestmentInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculatePaybackOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculateRoiOutputDTO;
+import com.aether.ms_calculator.calculator.dto.input.CostReductionForecastInputDTO;
 import com.aether.ms_calculator.calculator.dto.input.ReductionForecastInputDTO;
+import com.aether.ms_calculator.calculator.dto.output.CostReductionForecastOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.ReductionForecastOutputDTO;
 import java.util.List;
@@ -135,5 +137,36 @@ public final class CalculatorControllerDocs {
     )
     ResponseEntity<ReductionForecastOutputDTO> forecastReduction(
         @RequestBody ReductionForecastInputDTO body);
+  }
+
+  public interface CostReductionForecast {
+    @Operation(
+        summary = "Forecast monthly cost savings from a reduction percentage.",
+        description =
+            "Returns monthly savings, new monthly cost, total savings, and a month-by-month "
+                + "projection. Requires JWT with calculator:roi.",
+        tags = {"Calculator"},
+        parameters = {
+            @Parameter(
+                name = "Authorization",
+                in = ParameterIn.HEADER,
+                required = true,
+                description = "Bearer JWT for an employee with calculator:roi.")
+        },
+        responses = {
+            @ApiResponse(
+                description = "Success",
+                responseCode = "200",
+                content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = CostReductionForecastOutputDTO.class))),
+            @ApiResponse(description = "Validation error", responseCode = "400", content = @Content),
+            @ApiResponse(description = "Unauthorized", responseCode = "401", content = @Content),
+            @ApiResponse(description = "Forbidden", responseCode = "403", content = @Content),
+            @ApiResponse(description = "Unsupported media type", responseCode = "415", content = @Content)
+        }
+    )
+    ResponseEntity<CostReductionForecastOutputDTO> forecastCostReduction(
+        @RequestBody CostReductionForecastInputDTO body);
   }
 }

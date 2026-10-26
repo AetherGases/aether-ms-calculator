@@ -28,6 +28,7 @@ class CalculatorGasesControllerTests {
   private static final String AUTH_HEADER = AuthenticationKeyFilter.HEADER_NAME;
   private static final String KEY = CalculatorMockMvcSupport.TEST_INTERNAL_KEY;
   private static final String BEARER_GAS = "Bearer employee-with-gas";
+  private static final String BEARER_ROI = "Bearer employee-with-roi";
   private static final String BEARER_NO_GAS = "Bearer employee-without-gas";
   private static final String BEARER_INVALID = "Bearer invalid";
 
@@ -50,6 +51,7 @@ class CalculatorGasesControllerTests {
               return header.substring("Bearer ".length());
             });
     when(jwtTokenProvider.validateToken("employee-with-gas")).thenReturn(true);
+    when(jwtTokenProvider.validateToken("employee-with-roi")).thenReturn(true);
     when(jwtTokenProvider.validateToken("employee-without-gas")).thenReturn(true);
     when(jwtTokenProvider.validateToken("invalid"))
         .thenThrow(
@@ -65,6 +67,12 @@ class CalculatorGasesControllerTests {
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
                 "other@aether.test", "", List.of(new SimpleGrantedAuthority("calculator"))));
+    when(jwtTokenProvider.getAuthentication("employee-with-roi"))
+        .thenReturn(
+            new UsernamePasswordAuthenticationToken(
+                "roi@aether.test",
+                "",
+                List.of(new SimpleGrantedAuthority("calculator:roi"))));
   }
 
   @Test
@@ -93,6 +101,15 @@ class CalculatorGasesControllerTests {
         .perform(get("/calculator/gases").header("Authorization", BEARER_NO_GAS))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"));
+  }
+
+  @Test
+  void gases_withCalculatorRoiOnly_returns403() throws Exception {
+    mockMvc
+        .perform(get("/calculator/gases").header("Authorization", BEARER_ROI))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error_code").value("forbidden"))
+        .andExpect(jsonPath("$.message").value("Missing calculator:gas permission."));
   }
 
   @Test
