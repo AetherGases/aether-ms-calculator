@@ -26,7 +26,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void roi_missingHeader_returns401() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
         .andExpect(status().isUnauthorized())
@@ -36,7 +36,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void payback_missingHeader_returns401() throws Exception {
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
         .andExpect(status().isUnauthorized())
@@ -46,7 +46,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void payback_wrongKey_returns401() throws Exception {
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, "wrong-key")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
@@ -57,7 +57,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void roi_wrongKey_returns401() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, "wrong-key")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
@@ -68,7 +68,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void roi_validKey_returns200() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, VALID_KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
@@ -78,7 +78,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void payback_validKey_returns200() throws Exception {
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, VALID_KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
@@ -93,7 +93,7 @@ class AuthenticationKeyFilterTest {
 
     @Test
     void roi_missingHeader_stillReturns401() throws Exception {
-      unconfiguredMvc.perform(post("/roi")
+      unconfiguredMvc.perform(post("/api/calculator/roi")
               .contentType(MediaType.APPLICATION_JSON)
               .content(BODY))
           .andExpect(status().isUnauthorized())
@@ -103,7 +103,7 @@ class AuthenticationKeyFilterTest {
 
     @Test
     void roi_headerPresent_returns503WithoutErrorCode() throws Exception {
-      MvcResult result = unconfiguredMvc.perform(post("/roi")
+      MvcResult result = unconfiguredMvc.perform(post("/api/calculator/roi")
               .header(AUTH_HEADER, "any-key")
               .contentType(MediaType.APPLICATION_JSON)
               .content(BODY))
@@ -119,7 +119,7 @@ class AuthenticationKeyFilterTest {
 
     @Test
     void payback_headerPresent_returns503WithoutErrorCode() throws Exception {
-      MvcResult result = unconfiguredMvc.perform(post("/payback")
+      MvcResult result = unconfiguredMvc.perform(post("/api/calculator/payback")
               .header(AUTH_HEADER, "any-key")
               .contentType(MediaType.APPLICATION_JSON)
               .content(BODY))
