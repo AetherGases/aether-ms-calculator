@@ -4,11 +4,14 @@ public final class CalculatorPaths {
 
   public static final String CALCULATOR_GAS_AUTHORITY = "calculator:gas";
   public static final String CALCULATOR_ROI_AUTHORITY = "calculator:roi";
-  public static final String ROI_PATH = "/roi";
-  public static final String PAYBACK_PATH = "/payback";
-  public static final String GASES_PATH = "/gases";
-  public static final String REDUCTION_FORECAST_PATH = "/reduction/forecast";
-  public static final String COST_REDUCTION_FORECAST_PATH = "/cost-reduction/forecast";
+  public static final String BASE_PATH = "/api/calculator";
+  public static final String ROI_PATH = BASE_PATH + "/roi";
+  public static final String PAYBACK_PATH = BASE_PATH + "/payback";
+  public static final String GASES_PATH = BASE_PATH + "/gases";
+  public static final String REDUCTION_PATH = BASE_PATH + "/reduction";
+  public static final String REDUCTION_FORECAST_PATH = REDUCTION_PATH + "/forecast";
+  public static final String COST_REDUCTION_PATH = BASE_PATH + "/cost-reduction";
+  public static final String COST_REDUCTION_FORECAST_PATH = COST_REDUCTION_PATH + "/forecast";
 
   private CalculatorPaths() {}
 
@@ -18,7 +21,7 @@ public final class CalculatorPaths {
 
   public static boolean requiresCalculatorRoiAuthority(String path) {
     return path != null
-        && (path.equals(COST_REDUCTION_FORECAST_PATH) || path.startsWith("/cost-reduction/"));
+        && (path.equals(COST_REDUCTION_FORECAST_PATH) || path.startsWith(COST_REDUCTION_PATH + "/"));
   }
 
   public static boolean requiresCalculatorGasAuthority(String path) {
@@ -34,10 +37,10 @@ public final class CalculatorPaths {
     }
     return isAuthenticationKeyRoute(path)
         || path.equals(GASES_PATH)
-        || path.startsWith("/gases/")
-        || path.equals("/reduction")
-        || path.startsWith("/reduction/")
-        || path.equals("/cost-reduction")
-        || path.startsWith("/cost-reduction/");
+        || path.startsWith(GASES_PATH + "/")
+        || path.equals(REDUCTION_PATH)
+        || path.startsWith(REDUCTION_PATH + "/")
+        || path.equals(COST_REDUCTION_PATH)
+        || path.startsWith(COST_REDUCTION_PATH + "/");
   }
 }

@@ -23,7 +23,7 @@ class CalculatorControllerTests {
   @Test
   void roi_workedExample() throws Exception {
     String body = "{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -41,7 +41,7 @@ class CalculatorControllerTests {
 
   @Test
   void roi_validationBeforeAuth() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, "wrong")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{}"))
@@ -53,7 +53,7 @@ class CalculatorControllerTests {
   void roi_extraFields_sorted() throws Exception {
     String body =
         "{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125],\"discount_rate\":1,\"tax\":2}";
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -65,7 +65,7 @@ class CalculatorControllerTests {
 
   @Test
   void roi_missingCapex() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{}"))
@@ -75,7 +75,7 @@ class CalculatorControllerTests {
 
   @Test
   void roi_booleanCapexRejected() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"capex\":true,\"wacc_monthly\":0.25,\"cash_flows\":[125]}"))
@@ -86,7 +86,7 @@ class CalculatorControllerTests {
 
   @Test
   void roi_nonFiniteCapexRejected() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"capex\":1e309,\"wacc_monthly\":0.25,\"cash_flows\":[125]}"))
@@ -96,7 +96,7 @@ class CalculatorControllerTests {
 
   @Test
   void roi_waccOnePointZeroUsesPythonFloatRepr() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"capex\":150,\"wacc_monthly\":1.0,\"cash_flows\":[125]}"))
@@ -107,7 +107,7 @@ class CalculatorControllerTests {
 
   @Test
   void roi_cashFlowsObjectUsesPythonDictRepr() throws Exception {
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":{\"1\":125}}"))
@@ -119,7 +119,7 @@ class CalculatorControllerTests {
   @Test
   void roi_unviableCapex250() throws Exception {
     String body = "{\"capex\":250,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -132,7 +132,7 @@ class CalculatorControllerTests {
   @Test
   void roi_exactRecoveryMonthOne() throws Exception {
     String body = "{\"capex\":100,\"wacc_monthly\":0.25,\"cash_flows\":[125]}";
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -145,7 +145,7 @@ class CalculatorControllerTests {
   @Test
   void roi_roundingCase() throws Exception {
     String body = "{\"capex\":1000,\"wacc_monthly\":0.01,\"cash_flows\":[333.333]}";
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -157,7 +157,7 @@ class CalculatorControllerTests {
   @Test
   void roi_monthlyCashFlowDiscountedOverSixtyMonths() throws Exception {
     String body = "{\"capex\":150000,\"wacc_monthly\":0.01,\"monthly_cash_flow\":5000}";
-    mockMvc.perform(post("/roi")
+    mockMvc.perform(post("/api/calculator/roi")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -171,7 +171,7 @@ class CalculatorControllerTests {
   @Test
   void payback_workedExample() throws Exception {
     String body = "{\"capex\":150,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -183,7 +183,7 @@ class CalculatorControllerTests {
   @Test
   void payback_unrecovered() throws Exception {
     String body = "{\"capex\":250,\"wacc_monthly\":0.25,\"cash_flows\":[125,156.25]}";
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -195,7 +195,7 @@ class CalculatorControllerTests {
   @Test
   void payback_exactRecoveryMonthOne() throws Exception {
     String body = "{\"capex\":100,\"wacc_monthly\":0.25,\"cash_flows\":[125]}";
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -206,7 +206,7 @@ class CalculatorControllerTests {
   @Test
   void payback_waccZero_coversInMonthTwo() throws Exception {
     String body = "{\"capex\":250,\"wacc_monthly\":0,\"cash_flows\":[100,200,300]}";
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -218,7 +218,7 @@ class CalculatorControllerTests {
   @Test
   void payback_waccZero_accumulated() throws Exception {
     String body = "{\"capex\":290,\"wacc_monthly\":0,\"cash_flows\":[100,100,100]}";
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -239,7 +239,7 @@ class CalculatorControllerTests {
     flows.setLength(flows.length() - 1);
     flows.append("]");
     String body = "{\"capex\":5900,\"wacc_monthly\":0,\"cash_flows\":" + flows + "}";
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body))
@@ -251,7 +251,7 @@ class CalculatorControllerTests {
 
   @Test
   void payback_validationMatchesRoi() throws Exception {
-    mockMvc.perform(post("/payback")
+    mockMvc.perform(post("/api/calculator/payback")
             .header(AUTH_HEADER, KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content("{}"))

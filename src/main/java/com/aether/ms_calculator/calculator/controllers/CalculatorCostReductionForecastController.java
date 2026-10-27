@@ -3,6 +3,7 @@ package com.aether.ms_calculator.calculator.controllers;
 import com.aether.ms_calculator.calculator.dto.input.CostReductionForecastInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CostReductionForecastOutputDTO;
 import com.aether.ms_calculator.calculator.services.CostReductionForecastService;
+import com.aether.ms_calculator.shared.security.CalculatorPaths;
 import com.aether.ms_calculator.shared.docs.CalculatorControllerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class CalculatorCostReductionForecastController
   private final CostReductionForecastService costReductionForecastService;
 
   @Override
-  @PostMapping("/cost-reduction/forecast")
+  @PostMapping(CalculatorPaths.COST_REDUCTION_FORECAST_PATH)
   public ResponseEntity<CostReductionForecastOutputDTO> forecastCostReduction(
       @RequestBody CostReductionForecastInputDTO body) {
     return ResponseEntity.ok(costReductionForecastService.forecast(body));

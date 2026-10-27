@@ -126,14 +126,15 @@ JSON maps in the controller or service.
 
 ### HTTP surface
 
-Kong already mounts this service at `/calculator/`. Controllers must not
-repeat that prefix; the paths below are what the process serves.
+All routes are served under the `/api/calculator` prefix
+(`CalculatorPaths.BASE_PATH`). Controllers and security rules must reference the
+constants in `CalculatorPaths` instead of repeating literals.
 
-- `POST /roi`
-- `POST /payback`
-- `GET /gases`
-- `POST /reduction/forecast`
-- `POST /cost-reduction/forecast` (camelCase body; JWT + `calculator:roi`)
+- `POST /api/calculator/roi`
+- `POST /api/calculator/payback`
+- `GET /api/calculator/gases`
+- `POST /api/calculator/reduction/forecast`
+- `POST /api/calculator/cost-reduction/forecast` (camelCase body; JWT + `calculator:roi`)
 
 ---
 

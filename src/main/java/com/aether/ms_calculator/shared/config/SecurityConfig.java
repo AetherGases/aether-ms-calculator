@@ -1,6 +1,7 @@
 package com.aether.ms_calculator.shared.config;
 
 import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
+import com.aether.ms_calculator.shared.security.CalculatorPaths;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletResponse;
@@ -70,12 +71,12 @@ public class SecurityConfig {
                     "/v3/api-docs/**"
                 ).permitAll()
                 .requestMatchers(
-                    "/roi",
-                    "/payback",
-                    "/gases",
-                    "/gases/**",
-                    "/reduction/**",
-                    "/cost-reduction/**")
+                    CalculatorPaths.ROI_PATH,
+                    CalculatorPaths.PAYBACK_PATH,
+                    CalculatorPaths.GASES_PATH,
+                    CalculatorPaths.GASES_PATH + "/**",
+                    CalculatorPaths.REDUCTION_PATH + "/**",
+                    CalculatorPaths.COST_REDUCTION_PATH + "/**")
                 .permitAll()
                 .requestMatchers(
                     "/api/**"

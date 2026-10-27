@@ -47,9 +47,9 @@ class CalculatorPathsTest {
 
   @Test
   void unknownGasesOrReductionPathRequiresCalculatorGas() {
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/reduction/other")).isTrue();
-    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/gases/extra")).isTrue();
-    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority("/reduction/other")).isFalse();
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/api/calculator/reduction/other")).isTrue();
+    assertThat(CalculatorPaths.requiresCalculatorGasAuthority("/api/calculator/gases/extra")).isTrue();
+    assertThat(CalculatorPaths.requiresCalculatorRoiAuthority("/api/calculator/reduction/other")).isFalse();
   }
 
   @Test

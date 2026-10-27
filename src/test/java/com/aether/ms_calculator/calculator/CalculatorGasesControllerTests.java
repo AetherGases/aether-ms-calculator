@@ -77,20 +77,20 @@ class CalculatorGasesControllerTests {
 
   @Test
   void gases_withoutJwt_returns401() throws Exception {
-    mockMvc.perform(get("/gases")).andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/api/calculator/gases")).andExpect(status().isUnauthorized());
   }
 
   @Test
   void gases_withAuthenticationKeyOnly_returns401() throws Exception {
     mockMvc
-        .perform(get("/gases").header(AUTH_HEADER, KEY))
+        .perform(get("/api/calculator/gases").header(AUTH_HEADER, KEY))
         .andExpect(status().isUnauthorized());
   }
 
   @Test
   void gases_withInvalidJwt_returns401() throws Exception {
     mockMvc
-        .perform(get("/gases").header("Authorization", BEARER_INVALID))
+        .perform(get("/api/calculator/gases").header("Authorization", BEARER_INVALID))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.error_code").value("unauthorized"));
   }
@@ -98,7 +98,7 @@ class CalculatorGasesControllerTests {
   @Test
   void gases_withJwtMissingCalculatorGas_returns403() throws Exception {
     mockMvc
-        .perform(get("/gases").header("Authorization", BEARER_NO_GAS))
+        .perform(get("/api/calculator/gases").header("Authorization", BEARER_NO_GAS))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"));
   }
@@ -106,7 +106,7 @@ class CalculatorGasesControllerTests {
   @Test
   void gases_withCalculatorRoiOnly_returns403() throws Exception {
     mockMvc
-        .perform(get("/gases").header("Authorization", BEARER_ROI))
+        .perform(get("/api/calculator/gases").header("Authorization", BEARER_ROI))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"))
         .andExpect(jsonPath("$.message").value("Missing calculator:gas permission."));
@@ -123,7 +123,7 @@ class CalculatorGasesControllerTests {
                     4, "Biogenic carbon dioxide", "CO2(b)", true, new BigDecimal("1"), null)));
 
     mockMvc
-        .perform(get("/gases").header("Authorization", BEARER_GAS))
+        .perform(get("/api/calculator/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(3)))
         .andExpect(jsonPath("$[0].id").value(1))
@@ -140,7 +140,7 @@ class CalculatorGasesControllerTests {
     when(gasRepository.findAll()).thenReturn(List.of());
 
     mockMvc
-        .perform(get("/gases").header("Authorization", BEARER_GAS))
+        .perform(get("/api/calculator/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));
   }
@@ -153,7 +153,7 @@ class CalculatorGasesControllerTests {
             "", jwtTokenProvider, new GasCatalogService(gasRepository));
 
     unconfigured
-        .perform(get("/gases").header("Authorization", BEARER_GAS))
+        .perform(get("/api/calculator/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));
   }
