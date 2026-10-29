@@ -61,6 +61,8 @@ public class SecurityConfig {
         )
         .authorizeHttpRequests(
             authorizeHttpRequests -> authorizeHttpRequests
+                // Errors are forwarded to /error: securing it turns every 404, 400 and 403 into a 401
+                .requestMatchers("/error").permitAll()
                 .requestMatchers(
                     "/api/auth/login",
                     "/api/auth/refresh/**",
