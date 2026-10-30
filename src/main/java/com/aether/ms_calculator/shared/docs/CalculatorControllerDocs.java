@@ -86,14 +86,14 @@ public final class CalculatorControllerDocs {
         summary = "List every gas in the catalog.",
         description =
             "Returns id, name, formula, is_green (gas.is_biogenic), and gwp for hub pickers. "
-                + "Requires JWT with calculator:gas.",
+                + "Requires JWT with calculator:gases.",
         tags = {"Calculator"},
         parameters = {
             @Parameter(
                 name = "Authorization",
                 in = ParameterIn.HEADER,
                 required = true,
-                description = "Bearer JWT for an employee with calculator:gas.")
+                description = "Bearer JWT for an employee with calculator:gases.")
         },
         responses = {
             @ApiResponse(
@@ -114,14 +114,14 @@ public final class CalculatorControllerDocs {
     @Operation(
         summary = "Forecast remaining emissions and fossil tCO2e avoided after switching to a green gas.",
         description =
-            "Uses catalog GWP values at request time. Requires JWT with calculator:gas.",
+            "Uses catalog GWP values at request time. Requires JWT with calculator:gases.",
         tags = {"Calculator"},
         parameters = {
             @Parameter(
                 name = "Authorization",
                 in = ParameterIn.HEADER,
                 required = true,
-                description = "Bearer JWT for an employee with calculator:gas.")
+                description = "Bearer JWT for an employee with calculator:gases.")
         },
         responses = {
             @ApiResponse(

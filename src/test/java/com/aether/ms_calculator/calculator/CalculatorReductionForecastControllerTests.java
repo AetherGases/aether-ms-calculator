@@ -72,7 +72,7 @@ class CalculatorReductionForecastControllerTests {
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gas"))));
+                List.of(new SimpleGrantedAuthority("calculator:gases"))));
     when(jwtTokenProvider.getAuthentication("employee-without-gas"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
@@ -196,7 +196,7 @@ class CalculatorReductionForecastControllerTests {
                     "{\"years\":1,\"current_emission\":{\"gas\":1,\"volume_co2e\":1,\"scope\":1},\"green_gas\":4}"))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"))
-        .andExpect(jsonPath("$.message").value("Missing calculator:gas permission."));
+        .andExpect(jsonPath("$.message").value("Missing calculator:gases permission."));
     verifyNoInteractions(gasRepository);
   }
 

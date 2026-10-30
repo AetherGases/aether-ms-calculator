@@ -75,7 +75,7 @@ class CalculatorUnsupportedMediaTypeTests {
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gas"))));
+                List.of(new SimpleGrantedAuthority("calculator:gases"))));
     when(jwtTokenProvider.getAuthentication("employee-with-roi"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
