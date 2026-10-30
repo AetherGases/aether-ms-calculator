@@ -77,8 +77,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     if (CalculatorPaths.requiresCalculatorGasAuthority(path)) {
       enforceAuthority(
           path,
-          CalculatorPaths.CALCULATOR_GAS_AUTHORITY,
-          "Missing calculator:gas permission.");
+          CalculatorPaths.CALCULATOR_GASES_AUTHORITY,
+          "Missing calculator:gases permission.");
     }
   }
 

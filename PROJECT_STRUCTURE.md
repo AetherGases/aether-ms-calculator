@@ -261,13 +261,13 @@ Ask which class when that is unclear.
   It 503s only roi/payback. Forecast and gas listing must not depend on
   `INTERNAL_AUTHENTICATION_KEY`.
 - `GET /gases` and `POST /reduction/forecast` require
-  `Authorization: Bearer <jwt>` with authority `calculator:gas`.
+  `Authorization: Bearer <jwt>` with authority `calculator:gases`.
 - `POST /cost-reduction/forecast` requires JWT with authority
-  `calculator:roi` (not `calculator:gas`). Internal `authentication-key` does
+  `calculator:roi` (not `calculator:gases`). Internal `authentication-key` does
   not satisfy that path.
 - `JwtTokenFilter` skips only roi and payback. Other calculator JWT
   routes (`/gases`, `/reduction/**`) are deny-by-default: they require
-  `calculator:gas` unless `CalculatorPaths` marks them as `calculator:roi`
+  `calculator:gases` unless `CalculatorPaths` marks them as `calculator:roi`
   (`/cost-reduction/**` today).
 - Do not bind a user or company from the JSON body. Investment routes are
   service-to-service; forecast identity stays in the JWT.
@@ -339,7 +339,7 @@ Do not commit secrets. Do not put a real `INTERNAL_AUTHENTICATION_KEY` or
   controllers).
 - Do not put JPA repositories inside `calculator/`.
 - Do not authenticate ROI/payback with JWT instead of `authentication-key`.
-  Forecast and gas listing use JWT + `calculator:gas`; do not put those
+  Forecast and gas listing use JWT + `calculator:gases`; do not put those
   two routes on the internal key.
 - Do not put JPA entities in `calculator.domain` forecast math. Pass
   catalog values (`CatalogGas` id + gwp).

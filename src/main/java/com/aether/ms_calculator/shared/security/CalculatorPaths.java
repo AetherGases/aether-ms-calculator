@@ -2,7 +2,7 @@ package com.aether.ms_calculator.shared.security;
 
 public final class CalculatorPaths {
 
-  public static final String CALCULATOR_GAS_AUTHORITY = "calculator:gas";
+  public static final String CALCULATOR_GASES_AUTHORITY = "calculator:gases";
   public static final String CALCULATOR_ROI_AUTHORITY = "calculator:roi";
   public static final String BASE_PATH = "/api/calculator";
   public static final String ROI_PATH = BASE_PATH + "/roi";

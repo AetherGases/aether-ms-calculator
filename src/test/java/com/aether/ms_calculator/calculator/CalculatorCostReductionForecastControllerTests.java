@@ -78,13 +78,13 @@ class CalculatorCostReductionForecastControllerTests {
                 "",
                 List.of(
                     new SimpleGrantedAuthority("calculator:roi"),
-                    new SimpleGrantedAuthority("calculator:gas"))));
+                    new SimpleGrantedAuthority("calculator:gases"))));
     when(jwtTokenProvider.getAuthentication("employee-with-gas"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gas"))));
+                List.of(new SimpleGrantedAuthority("calculator:gases"))));
     when(jwtTokenProvider.getAuthentication("employee-with-calculator"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(

@@ -62,7 +62,7 @@ class CalculatorGasesControllerTests {
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gas"))));
+                List.of(new SimpleGrantedAuthority("calculator:gases"))));
     when(jwtTokenProvider.getAuthentication("employee-without-gas"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
@@ -109,7 +109,7 @@ class CalculatorGasesControllerTests {
         .perform(get("/api/calculator/gases").header("Authorization", BEARER_ROI))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"))
-        .andExpect(jsonPath("$.message").value("Missing calculator:gas permission."));
+        .andExpect(jsonPath("$.message").value("Missing calculator:gases permission."));
   }
 
   @Test
