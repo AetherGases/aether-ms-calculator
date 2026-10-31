@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.InputCoercionException;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,13 +44,62 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ExceptionOutputDTO> handleHttpMessageNotReadable(
       HttpMessageNotReadableException ex) {
-    String message =
-        isWellFormedNonObjectBody(ex)
-            ? "The request must be a JSON object."
-            : "The request body is not valid JSON.";
+    String message = invalidFieldMessage(ex);
+    if (message == null) {
+      message =
+          isWellFormedNonObjectBody(ex)
+              ? "The request must be a JSON object."
+              : "The request body is not valid JSON.";
+    }
     return new ResponseEntity<>(
         new ExceptionOutputDTO(message, HttpStatus.BAD_REQUEST, "validation_error"),
         HttpStatus.BAD_REQUEST);
+  }
+
+  /**
+   * Typed request DTOs fail Jackson binding on a wrong value type ("15" for an integer). Name the
+   * field, the way the domain validators do, instead of reporting a non-object body.
+   */
+  private static String invalidFieldMessage(HttpMessageNotReadableException ex) {
+    for (Throwable current = ex; current != null; current = current.getCause()) {
+      if (current instanceof MismatchedInputException mismatch) {
+        String field = jsonPath(mismatch);
+        if (field.isEmpty()) {
+          return null;
+        }
+        Class<?> target = mismatch.getTargetType();
+        if (target == Integer.class || target == int.class) {
+          return "\"" + field + "\" must be an integer.";
+        }
+        if (target != null && Number.class.isAssignableFrom(target)) {
+          return "\"" + field + "\" must be a number.";
+        }
+        if (target != null && !target.getName().startsWith("java.")) {
+          return "\"" + field + "\" must be a JSON object.";
+        }
+        return "\"" + field + "\" has an invalid type.";
+      }
+      if (current instanceof InputCoercionException coercion) {
+        String field = jsonPath(coercion);
+        return field.isEmpty() ? null : "\"" + field + "\" is out of range.";
+      }
+    }
+    return null;
+  }
+
+  private static String jsonPath(JacksonException exception) {
+    StringBuilder path = new StringBuilder();
+    for (JacksonException.Reference reference : exception.getPath()) {
+      if (reference.getPropertyName() != null) {
+        if (!path.isEmpty()) {
+          path.append('.');
+        }
+        path.append(reference.getPropertyName());
+      } else if (reference.getIndex() >= 0) {
+        path.append('[').append(reference.getIndex()).append(']');
+      }
+    }
+    return path.toString();
   }
 
   private static boolean isWellFormedNonObjectBody(HttpMessageNotReadableException ex) {

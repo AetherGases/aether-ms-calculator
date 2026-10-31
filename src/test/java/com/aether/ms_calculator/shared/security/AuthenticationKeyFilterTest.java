@@ -26,49 +26,49 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void roi_missingHeader_returns401() throws Exception {
-    mockMvc.perform(post("/api/calculator/roi")
+    mockMvc.perform(post("/roi")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error_code").value("unauthorized"))
-        .andExpect(jsonPath("$.message").value("Missing authentication key."));
+        .andExpect(jsonPath("$.error_code").doesNotExist())
+        .andExpect(jsonPath("$.message").value("exception.authentication-key.required"));
   }
 
   @Test
   void payback_missingHeader_returns401() throws Exception {
-    mockMvc.perform(post("/api/calculator/payback")
+    mockMvc.perform(post("/payback")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error_code").value("unauthorized"))
-        .andExpect(jsonPath("$.message").value("Missing authentication key."));
+        .andExpect(jsonPath("$.error_code").doesNotExist())
+        .andExpect(jsonPath("$.message").value("exception.authentication-key.required"));
   }
 
   @Test
   void payback_wrongKey_returns401() throws Exception {
-    mockMvc.perform(post("/api/calculator/payback")
+    mockMvc.perform(post("/payback")
             .header(AUTH_HEADER, "wrong-key")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error_code").value("unauthorized"))
-        .andExpect(jsonPath("$.message").value("Invalid authentication key."));
+        .andExpect(jsonPath("$.error_code").doesNotExist())
+        .andExpect(jsonPath("$.message").value("exception.authentication-key.invalid"));
   }
 
   @Test
   void roi_wrongKey_returns401() throws Exception {
-    mockMvc.perform(post("/api/calculator/roi")
+    mockMvc.perform(post("/roi")
             .header(AUTH_HEADER, "wrong-key")
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error_code").value("unauthorized"))
-        .andExpect(jsonPath("$.message").value("Invalid authentication key."));
+        .andExpect(jsonPath("$.error_code").doesNotExist())
+        .andExpect(jsonPath("$.message").value("exception.authentication-key.invalid"));
   }
 
   @Test
   void roi_validKey_returns200() throws Exception {
-    mockMvc.perform(post("/api/calculator/roi")
+    mockMvc.perform(post("/roi")
             .header(AUTH_HEADER, VALID_KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
@@ -78,7 +78,7 @@ class AuthenticationKeyFilterTest {
 
   @Test
   void payback_validKey_returns200() throws Exception {
-    mockMvc.perform(post("/api/calculator/payback")
+    mockMvc.perform(post("/payback")
             .header(AUTH_HEADER, VALID_KEY)
             .contentType(MediaType.APPLICATION_JSON)
             .content(BODY))
@@ -93,17 +93,17 @@ class AuthenticationKeyFilterTest {
 
     @Test
     void roi_missingHeader_stillReturns401() throws Exception {
-      unconfiguredMvc.perform(post("/api/calculator/roi")
+      unconfiguredMvc.perform(post("/roi")
               .contentType(MediaType.APPLICATION_JSON)
               .content(BODY))
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.error_code").value("unauthorized"))
-          .andExpect(jsonPath("$.message").value("Missing authentication key."));
+          .andExpect(jsonPath("$.error_code").doesNotExist())
+          .andExpect(jsonPath("$.message").value("exception.authentication-key.required"));
     }
 
     @Test
     void roi_headerPresent_returns503WithoutErrorCode() throws Exception {
-      MvcResult result = unconfiguredMvc.perform(post("/api/calculator/roi")
+      MvcResult result = unconfiguredMvc.perform(post("/roi")
               .header(AUTH_HEADER, "any-key")
               .contentType(MediaType.APPLICATION_JSON)
               .content(BODY))
@@ -113,13 +113,13 @@ class AuthenticationKeyFilterTest {
       JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
       assertThat(body.has("message")).isTrue();
       assertThat(body.get("message").asText())
-          .isEqualTo("Calculator authentication is not configured.");
+          .isEqualTo("exception.authentication-key.not-configured");
       assertThat(body.has("error_code")).isFalse();
     }
 
     @Test
     void payback_headerPresent_returns503WithoutErrorCode() throws Exception {
-      MvcResult result = unconfiguredMvc.perform(post("/api/calculator/payback")
+      MvcResult result = unconfiguredMvc.perform(post("/payback")
               .header(AUTH_HEADER, "any-key")
               .contentType(MediaType.APPLICATION_JSON)
               .content(BODY))
@@ -129,7 +129,7 @@ class AuthenticationKeyFilterTest {
       JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
       assertThat(body.has("error_code")).isFalse();
       assertThat(body.get("message").asText())
-          .isEqualTo("Calculator authentication is not configured.");
+          .isEqualTo("exception.authentication-key.not-configured");
     }
   }
 }

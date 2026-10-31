@@ -20,7 +20,7 @@ public class CostReductionForecastService {
   public CostReductionForecastOutputDTO forecast(CostReductionForecastInputDTO input) {
     CostReductionForecastParsed parsed =
         costReductionForecastValidator.validate(
-            CalculatorMapper.toCostReductionRequestNode(input));
+            CalculatorMapper.toCostReductionRequest(input));
     CostReductionForecastResult result = costReductionForecastCalculator.calculate(parsed);
     return CalculatorMapper.toCostReductionOutput(result);
   }

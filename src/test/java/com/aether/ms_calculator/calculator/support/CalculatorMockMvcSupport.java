@@ -1,16 +1,17 @@
 package com.aether.ms_calculator.calculator.support;
 
 import com.aether.ms_calculator.calculator.controllers.CalculatorCostReductionForecastController;
-import com.aether.ms_calculator.calculator.controllers.CalculatorGasController;
+import com.aether.ms_calculator.calculator.controllers.FindManyGasesController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorReductionForecastController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorPaybackController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorRoiController;
-import com.aether.ms_calculator.calculator.services.GasCatalogService;
+import com.aether.ms_calculator.calculator.services.FinaManyGasesService;
 import com.aether.ms_calculator.calculator.services.CostReductionForecastService;
 import com.aether.ms_calculator.calculator.services.ReductionForecastService;
 import com.aether.ms_calculator.calculator.domain.InvestmentCalculator;
 import com.aether.ms_calculator.calculator.domain.InvestmentValidator;
 import com.aether.ms_calculator.calculator.services.CalculatorService;
+import com.aether.ms_calculator.shared.config.JacksonConfig;
 import com.aether.ms_calculator.shared.config.properties.CalculatorAuthenticationProperties;
 import com.aether.ms_calculator.shared.exceptions.MsCalculatorException;
 import com.aether.ms_calculator.shared.handlers.GlobalExceptionHandler;
@@ -96,7 +97,7 @@ public final class CalculatorMockMvcSupport {
   public static MockMvc gasCatalogMockMvc(
       String internalAuthenticationKey,
       JwtTokenProvider jwtTokenProvider,
-      GasCatalogService gasCatalogService) {
+      FinaManyGasesService finaManyGasesService) {
     ObjectMapper objectMapper = new ObjectMapper();
     GlobalExceptionHandler advice = exceptionHandler();
     AuthenticationKeyFilter keyFilter =
@@ -104,7 +105,7 @@ public final class CalculatorMockMvcSupport {
     JwtTokenFilter jwtFilter =
         new JwtTokenFilter(jwtTokenProvider, exceptionResolver(objectMapper, advice));
 
-    return MockMvcBuilders.standaloneSetup(new CalculatorGasController(gasCatalogService))
+    return MockMvcBuilders.standaloneSetup(new FindManyGasesController(finaManyGasesService))
         .setMessageConverters(jackson3Converter())
         .setControllerAdvice(advice)
         .addFilters(keyFilter, jwtFilter)
@@ -127,7 +128,8 @@ public final class CalculatorMockMvcSupport {
   }
 
   private static JacksonJsonHttpMessageConverter jackson3Converter() {
-    return new JacksonJsonHttpMessageConverter(JsonMapper.builder().build());
+    return new JacksonJsonHttpMessageConverter(
+        JacksonConfig.strictScalarCoercion(JsonMapper.builder()).build());
   }
 
   private static AuthenticationKeyFilter authenticationKeyFilter(
@@ -168,12 +170,12 @@ public final class CalculatorMockMvcSupport {
   @Profile("calculator-auth-probe")
   static class AuthProbeController {
 
-    @PostMapping("/api/calculator/roi")
+    @PostMapping("/roi")
     Map<String, Object> roi() {
       return Map.of();
     }
 
-    @PostMapping("/api/calculator/payback")
+    @PostMapping("/payback")
     Map<String, Object> payback() {
       return Map.of();
     }

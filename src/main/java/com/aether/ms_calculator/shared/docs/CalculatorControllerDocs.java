@@ -3,15 +3,16 @@ package com.aether.ms_calculator.shared.docs;
 import com.aether.ms_calculator.calculator.dto.input.CalculateInvestmentInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculatePaybackOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculateRoiOutputDTO;
-import com.aether.ms_calculator.calculator.dto.input.CostReductionForecastInputDTO;
-import com.aether.ms_calculator.calculator.dto.input.ReductionForecastInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CostReductionForecastOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.ReductionForecastOutputDTO;
+import com.aether.ms_calculator.calculator.dto.query_params.FindManyGasesQueryParamsDTO;
+import com.aether.ms_calculator.calculator.dto.request.CostReductionForecastRequestDTO;
+import com.aether.ms_calculator.calculator.dto.request.ReductionForecastRequestDTO;
+import com.aether.ms_calculator.shared.docs.schemas.CalculateInvestmentRequestSchema;
 import java.util.List;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,15 +29,14 @@ public final class CalculatorControllerDocs {
     @Operation(
         summary = "Calculate discounted ROI for a 60-month investment.",
         description =
-            "Validates the snake_case investment request and returns present value, VPL, ROI percent and viability.",
+            "Validates the snake_case investment request and returns present value, VPL, ROI percent and viability. "
+                + "Internal route for the AI hub: it is authenticated by the authentication-key header, not by the Bearer token.",
         tags = {"Calculator"},
-        parameters = {
-            @Parameter(
-                name = "authentication-key",
-                in = ParameterIn.HEADER,
-                required = true,
-                description = "Shared internal key used by the hub and this service.")
-        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = CalculateInvestmentRequestSchema.class))),
         responses = {
             @ApiResponse(
                 description = "Success",
@@ -56,15 +56,14 @@ public final class CalculatorControllerDocs {
     @Operation(
         summary = "Calculate discounted payback month for a 60-month investment.",
         description =
-            "Same request as ROI. Returns payback_months (or -1 when the outlay is never recovered) and viability.",
+            "Same request as ROI. Returns payback_months (or -1 when the outlay is never recovered) and viability. "
+                + "Internal route for the AI hub: it is authenticated by the authentication-key header, not by the Bearer token.",
         tags = {"Calculator"},
-        parameters = {
-            @Parameter(
-                name = "authentication-key",
-                in = ParameterIn.HEADER,
-                required = true,
-                description = "Shared internal key used by the hub and this service.")
-        },
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = CalculateInvestmentRequestSchema.class))),
         responses = {
             @ApiResponse(
                 description = "Success",
@@ -81,20 +80,15 @@ public final class CalculatorControllerDocs {
         @RequestBody CalculateInvestmentInputDTO body);
   }
 
-  public interface Gases {
+  public interface FindManyGases {
     @Operation(
-        summary = "List every gas in the catalog.",
+        summary = "List the gases in the catalog, optionally filtered by name.",
         description =
             "Returns id, name, formula, is_green (gas.is_biogenic), and gwp for hub pickers. "
-                + "Requires JWT with calculator:gases.",
+                + "The optional `name` query param filters by a case-insensitive partial match; "
+                + "when it is omitted or blank, the full catalog is returned. "
+                + "Requires JWT with calculator:gas.",
         tags = {"Calculator"},
-        parameters = {
-            @Parameter(
-                name = "Authorization",
-                in = ParameterIn.HEADER,
-                required = true,
-                description = "Bearer JWT for an employee with calculator:gases.")
-        },
         responses = {
             @ApiResponse(
                 description = "Success",
@@ -107,22 +101,16 @@ public final class CalculatorControllerDocs {
             @ApiResponse(description = "Forbidden", responseCode = "403", content = @Content)
         }
     )
-    ResponseEntity<List<GasCatalogItemOutputDTO>> listGases();
+    ResponseEntity<List<GasCatalogItemOutputDTO>> findManyGases(
+        @ParameterObject FindManyGasesQueryParamsDTO query);
   }
 
   public interface ReductionForecast {
     @Operation(
         summary = "Forecast remaining emissions and fossil tCO2e avoided after switching to a green gas.",
         description =
-            "Uses catalog GWP values at request time. Requires JWT with calculator:gases.",
+            "Uses catalog GWP values at request time. Requires JWT with calculator:gas.",
         tags = {"Calculator"},
-        parameters = {
-            @Parameter(
-                name = "Authorization",
-                in = ParameterIn.HEADER,
-                required = true,
-                description = "Bearer JWT for an employee with calculator:gases.")
-        },
         responses = {
             @ApiResponse(
                 description = "Success",
@@ -136,7 +124,7 @@ public final class CalculatorControllerDocs {
         }
     )
     ResponseEntity<ReductionForecastOutputDTO> forecastReduction(
-        @RequestBody ReductionForecastInputDTO body);
+        @RequestBody ReductionForecastRequestDTO body);
   }
 
   public interface CostReductionForecast {
@@ -146,13 +134,6 @@ public final class CalculatorControllerDocs {
             "Returns monthly savings, new monthly cost, total savings, and a month-by-month "
                 + "projection. Requires JWT with calculator:roi.",
         tags = {"Calculator"},
-        parameters = {
-            @Parameter(
-                name = "Authorization",
-                in = ParameterIn.HEADER,
-                required = true,
-                description = "Bearer JWT for an employee with calculator:roi.")
-        },
         responses = {
             @ApiResponse(
                 description = "Success",
@@ -167,6 +148,6 @@ public final class CalculatorControllerDocs {
         }
     )
     ResponseEntity<CostReductionForecastOutputDTO> forecastCostReduction(
-        @RequestBody CostReductionForecastInputDTO body);
+        @RequestBody CostReductionForecastRequestDTO body);
   }
 }

@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.aether.ms_calculator.calculator.services.CostReductionForecastService;
 import com.aether.ms_calculator.calculator.services.ReductionForecastService;
-import com.aether.ms_calculator.shared.security.CalculatorPaths;
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
 import com.aether.ms_calculator.shared.persistence.postgres.repositories.GasRepository;
 import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
@@ -75,7 +74,7 @@ class CalculatorUnsupportedMediaTypeTests {
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gases"))));
+                List.of(new SimpleGrantedAuthority("calculator:gas"))));
     when(jwtTokenProvider.getAuthentication("employee-with-roi"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
@@ -88,7 +87,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_textPlain_returns415Envelope() throws Exception {
     investmentMockMvc
         .perform(
-            post("/api/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
@@ -102,7 +101,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void payback_textPlain_returns415Envelope() throws Exception {
     investmentMockMvc
         .perform(
-            post("/api/calculator/payback")
+            post("/payback")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
@@ -116,7 +115,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void costReductionForecast_textPlainWithJwt_returns415Envelope() throws Exception {
     costReductionMockMvc
         .perform(
-            post(CalculatorPaths.COST_REDUCTION_FORECAST_PATH)
+            post("/cost-reduction/forecast")
                 .header("Authorization", BEARER_ROI)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(COST_REDUCTION_BODY))
@@ -130,7 +129,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void reductionForecast_textPlainWithJwt_returns415Envelope() throws Exception {
     forecastMockMvc
         .perform(
-            post("/api/calculator/reduction/forecast")
+            post("/reduction/forecast")
                 .header("Authorization", BEARER_GAS)
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(FORECAST_BODY))
@@ -144,30 +143,30 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_wrongKeyWithTextPlain_stillReturns401() throws Exception {
     investmentMockMvc
         .perform(
-            post("/api/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, "wrong")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error_code").value("unauthorized"));
+        .andExpect(jsonPath("$.status").value("UNAUTHORIZED"));
   }
 
   @Test
   void roi_missingKeyWithTextPlain_stillReturns401() throws Exception {
     investmentMockMvc
         .perform(
-            post("/api/calculator/roi")
+            post("/roi")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content(ROI_BODY))
         .andExpect(status().isUnauthorized())
-        .andExpect(jsonPath("$.error_code").value("unauthorized"));
+        .andExpect(jsonPath("$.status").value("UNAUTHORIZED"));
   }
 
   @Test
   void costReductionForecast_applicationJsonCharsetUtf8_stillSucceeds() throws Exception {
     costReductionMockMvc
         .perform(
-            post(CalculatorPaths.COST_REDUCTION_FORECAST_PATH)
+            post("/cost-reduction/forecast")
                 .header("Authorization", BEARER_ROI)
                 .contentType(MediaType.parseMediaType("application/json;charset=UTF-8"))
                 .content(COST_REDUCTION_BODY))
@@ -178,7 +177,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_applicationJsonCharsetUtf8_stillSucceeds() throws Exception {
     investmentMockMvc
         .perform(
-            post("/api/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.parseMediaType("application/json;charset=UTF-8"))
                 .content(ROI_BODY))
@@ -189,7 +188,7 @@ class CalculatorUnsupportedMediaTypeTests {
   void roi_applicationJson_stillReachesValidation() throws Exception {
     investmentMockMvc
         .perform(
-            post("/api/calculator/roi")
+            post("/roi")
                 .header(AUTH_HEADER, KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))

@@ -1,9 +1,9 @@
 package com.aether.ms_calculator.calculator.controllers;
 
-import com.aether.ms_calculator.calculator.dto.input.CostReductionForecastInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CostReductionForecastOutputDTO;
+import com.aether.ms_calculator.calculator.dto.request.CostReductionForecastRequestDTO;
+import com.aether.ms_calculator.calculator.mappers.CalculatorMapper;
 import com.aether.ms_calculator.calculator.services.CostReductionForecastService;
-import com.aether.ms_calculator.shared.security.CalculatorPaths;
 import com.aether.ms_calculator.shared.docs.CalculatorControllerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +23,11 @@ public class CalculatorCostReductionForecastController
   private final CostReductionForecastService costReductionForecastService;
 
   @Override
-  @PostMapping(CalculatorPaths.COST_REDUCTION_FORECAST_PATH)
+  @PostMapping("/cost-reduction/forecast")
   public ResponseEntity<CostReductionForecastOutputDTO> forecastCostReduction(
-      @RequestBody CostReductionForecastInputDTO body) {
-    return ResponseEntity.ok(costReductionForecastService.forecast(body));
+      @RequestBody CostReductionForecastRequestDTO body) {
+    return ResponseEntity.ok(
+        costReductionForecastService.forecast(
+            CalculatorMapper.convertCostReductionForecastRequestToInput(body)));
   }
 }
