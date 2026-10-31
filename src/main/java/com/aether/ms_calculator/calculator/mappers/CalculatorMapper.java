@@ -1,11 +1,14 @@
 package com.aether.ms_calculator.calculator.mappers;
 
+import com.aether.ms_calculator.calculator.domain.CostReductionForecastRequest;
 import com.aether.ms_calculator.calculator.domain.CostReductionForecastResult;
 import com.aether.ms_calculator.calculator.domain.PaybackResult;
 import com.aether.ms_calculator.calculator.domain.RoiResult;
+import com.aether.ms_calculator.calculator.domain.ReductionForecastRequest;
 import com.aether.ms_calculator.calculator.domain.ReductionForecastResult;
 import com.aether.ms_calculator.calculator.dto.input.CalculateInvestmentInputDTO;
 import com.aether.ms_calculator.calculator.dto.input.CostReductionForecastInputDTO;
+import com.aether.ms_calculator.calculator.dto.input.FindManyGasesInputDTO;
 import com.aether.ms_calculator.calculator.dto.input.ReductionForecastInputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculatePaybackOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.CalculateRoiOutputDTO;
@@ -14,10 +17,16 @@ import com.aether.ms_calculator.calculator.dto.output.CostReductionProjectionOut
 import com.aether.ms_calculator.calculator.dto.output.FutureEmissionOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO;
 import com.aether.ms_calculator.calculator.dto.output.ReductionForecastOutputDTO;
+import com.aether.ms_calculator.calculator.dto.query_params.FindManyGasesQueryParamsDTO;
+import com.aether.ms_calculator.calculator.dto.request.CostReductionForecastRequestDTO;
+import com.aether.ms_calculator.calculator.dto.request.ReductionForecastRequestDTO;
+import com.aether.ms_calculator.shared.helpers.NormalizeInput;
 import com.aether.ms_calculator.shared.persistence.postgres.entities.GasEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
+import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -28,13 +37,22 @@ public final class CalculatorMapper {
 
   private CalculatorMapper() {}
 
-  public static ObjectNode toCostReductionRequestNode(CostReductionForecastInputDTO input) {
-    ObjectNode node = JACKSON2.createObjectNode();
-    setIfPresent(node, "monthlyCost", input.getMonthlyCost());
-    setIfPresent(node, "reductionPercentage", input.getReductionPercentage());
-    setIfPresent(node, "periodMonths", input.getPeriodMonths());
-    input.getUnknownFields().forEach((name, value) -> setIfPresent(node, name, value));
-    return node;
+  public static CostReductionForecastInputDTO convertCostReductionForecastRequestToInput(
+      CostReductionForecastRequestDTO request) {
+    return new CostReductionForecastInputDTO(
+        request.getMonthlyCost(),
+        request.getReductionPercentage(),
+        request.getPeriodMonths(),
+        Set.copyOf(request.getUnknownFields()));
+  }
+
+  public static CostReductionForecastRequest toCostReductionRequest(
+      CostReductionForecastInputDTO input) {
+    return new CostReductionForecastRequest(
+        input.monthlyCost(),
+        input.reductionPercentage(),
+        input.periodMonths(),
+        input.unknownFields());
   }
 
   public static CostReductionForecastOutputDTO toCostReductionOutput(
@@ -48,22 +66,42 @@ public final class CalculatorMapper {
             .toList();
     return new CostReductionForecastOutputDTO(
         "BRL",
-        toJackson3(result.monthlyCostEcho()),
-        toJackson3(result.reductionPercentageEcho()),
-        toJackson3(result.periodMonthsEcho()),
+        result.monthlyCost(),
+        result.reductionPercentage(),
+        result.periodMonths(),
         result.monthlySavings(),
         result.newMonthlyCost(),
         result.totalSavings(),
         projection);
   }
 
-  public static ObjectNode toForecastRequestNode(ReductionForecastInputDTO input) {
-    ObjectNode node = JACKSON2.createObjectNode();
-    setIfPresent(node, "years", input.getYears());
-    setIfPresent(node, "green_gas", input.getGreenGas());
-    setIfPresent(node, "current_emission", input.getCurrentEmission());
-    input.getUnknownFields().forEach((name, value) -> setIfPresent(node, name, value));
-    return node;
+  public static ReductionForecastInputDTO convertReductionForecastRequestToInput(
+      ReductionForecastRequestDTO request) {
+    ReductionForecastRequestDTO.CurrentEmissionRequestDTO current = request.getCurrentEmission();
+    ReductionForecastInputDTO.CurrentEmissionInputDTO currentEmission =
+        current == null
+            ? null
+            : new ReductionForecastInputDTO.CurrentEmissionInputDTO(
+                current.getGas(),
+                current.getVolumeCo2e(),
+                current.getScope(),
+                Set.copyOf(current.getUnknownFields()));
+    return new ReductionForecastInputDTO(
+        request.getYears(),
+        currentEmission,
+        request.getGreenGas(),
+        Set.copyOf(request.getUnknownFields()));
+  }
+
+  public static ReductionForecastRequest toForecastRequest(ReductionForecastInputDTO input) {
+    ReductionForecastInputDTO.CurrentEmissionInputDTO current = input.currentEmission();
+    ReductionForecastRequest.CurrentEmission currentEmission =
+        current == null
+            ? null
+            : new ReductionForecastRequest.CurrentEmission(
+                current.gas(), current.volumeCo2e(), current.scope(), current.unknownFields());
+    return new ReductionForecastRequest(
+        input.years(), currentEmission, input.greenGas(), input.unknownFields());
   }
 
   public static ReductionForecastOutputDTO toForecastOutput(ReductionForecastResult result) {
@@ -92,6 +130,13 @@ public final class CalculatorMapper {
         result.vpl(),
         result.roiPercent(),
         result.viable());
+  }
+
+  public static FindManyGasesInputDTO convertFindManyGasesQueryToInput(FindManyGasesQueryParamsDTO query) {
+    return new FindManyGasesInputDTO(
+        NormalizeInput.name(query.name()),
+        query.isGreen()
+    );
   }
 
   public static GasCatalogItemOutputDTO toGasCatalogItem(GasEntity gas) {

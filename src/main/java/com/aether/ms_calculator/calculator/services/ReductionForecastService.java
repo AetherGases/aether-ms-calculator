@@ -24,7 +24,7 @@ public class ReductionForecastService {
 
   public ReductionForecastOutputDTO forecast(ReductionForecastInputDTO input) {
     ReductionForecastParsed parsed =
-        reductionForecastValidator.validate(CalculatorMapper.toForecastRequestNode(input));
+        reductionForecastValidator.validate(CalculatorMapper.toForecastRequest(input));
 
     GasEntity currentGas =
         gasRepository

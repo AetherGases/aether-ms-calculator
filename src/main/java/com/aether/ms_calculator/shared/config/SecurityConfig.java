@@ -1,10 +1,12 @@
 package com.aether.ms_calculator.shared.config;
 
+import com.aether.ms_calculator.shared.exceptions.ForbiddenException;
+import com.aether.ms_calculator.shared.exceptions.UnauthorizedException;
 import com.aether.ms_calculator.shared.security.AuthenticationKeyFilter;
 import com.aether.ms_calculator.shared.security.CalculatorPaths;
+import com.aether.ms_calculator.shared.security.PermissionAuthorizationManager;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenFilter;
 import com.aether.ms_calculator.shared.security.jwt.JwtTokenProvider;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,7 +50,7 @@ public class SecurityConfig {
   }
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http){
+  SecurityFilterChain securityFilterChain(HttpSecurity http, PermissionAuthorizationManager permissionManager){
     JwtTokenFilter customFilter = new JwtTokenFilter(tokenProvider, handlerExceptionResolver);
 
     return http
@@ -61,34 +63,34 @@ public class SecurityConfig {
         )
         .authorizeHttpRequests(
             authorizeHttpRequests -> authorizeHttpRequests
-                // Errors are forwarded to /error: securing it turns every 404, 400 and 403 into a 401
-                .requestMatchers("/error").permitAll()
                 .requestMatchers(
-                    "/api/auth/login",
-                    "/api/auth/refresh/**",
-                    "/api/auth/register",
-                    "/api/auth/reset-password/send-code",
-                    "/api/auth/reset-password/change-password",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
                 .requestMatchers(
                     CalculatorPaths.ROI_PATH,
-                    CalculatorPaths.PAYBACK_PATH,
-                    CalculatorPaths.GASES_PATH,
-                    CalculatorPaths.GASES_PATH + "/**",
-                    CalculatorPaths.REDUCTION_PATH + "/**",
-                    CalculatorPaths.COST_REDUCTION_PATH + "/**")
-                .permitAll()
-                .requestMatchers(
-                    "/api/**"
-                ).authenticated()
-                .requestMatchers("/users").denyAll()
+                    CalculatorPaths.PAYBACK_PATH
+                ).hasAuthority(AuthenticationKeyFilter.INTERNAL_CLIENT_AUTHORITY)
+                .anyRequest().access(permissionManager)
 
         ).exceptionHandling(exception -> exception
             .authenticationEntryPoint(
                 (request, response, authException) ->
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+                    handlerExceptionResolver.resolveException(
+                        request,
+                        response,
+                        null,
+                        new UnauthorizedException("exception.authentication.required")
+                    )
+            )
+            .accessDeniedHandler(
+                (request, response, accessDeniedException) ->
+                    handlerExceptionResolver.resolveException(
+                        request,
+                        response,
+                        null,
+                        new ForbiddenException("exception.permission.denied")
+                    )
             )
         )
         .cors(cors -> {})

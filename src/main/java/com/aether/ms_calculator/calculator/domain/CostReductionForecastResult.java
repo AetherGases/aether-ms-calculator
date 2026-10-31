@@ -1,13 +1,12 @@
 package com.aether.ms_calculator.calculator.domain;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.util.List;
 
 public record CostReductionForecastResult(
-    JsonNode monthlyCostEcho,
-    JsonNode reductionPercentageEcho,
-    JsonNode periodMonthsEcho,
+    BigDecimal monthlyCost,
+    int reductionPercentage,
+    int periodMonths,
     BigDecimal monthlySavings,
     BigDecimal newMonthlyCost,
     BigDecimal totalSavings,

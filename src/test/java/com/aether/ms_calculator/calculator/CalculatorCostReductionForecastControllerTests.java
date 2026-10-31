@@ -33,7 +33,7 @@ class CalculatorCostReductionForecastControllerTests {
   private static final String BEARER_GAS = "Bearer employee-with-gas";
   private static final String BEARER_LEGACY = "Bearer employee-with-calculator";
   private static final String BEARER_INVALID = "Bearer invalid";
-  private static final String PATH = "/api/calculator/cost-reduction/forecast";
+  private static final String PATH = "/cost-reduction/forecast";
 
   private final JwtTokenProvider jwtTokenProvider = Mockito.mock(JwtTokenProvider.class);
   private MockMvc mockMvc;
@@ -78,13 +78,13 @@ class CalculatorCostReductionForecastControllerTests {
                 "",
                 List.of(
                     new SimpleGrantedAuthority("calculator:roi"),
-                    new SimpleGrantedAuthority("calculator:gases"))));
+                    new SimpleGrantedAuthority("calculator:gas"))));
     when(jwtTokenProvider.getAuthentication("employee-with-gas"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gases"))));
+                List.of(new SimpleGrantedAuthority("calculator:gas"))));
     when(jwtTokenProvider.getAuthentication("employee-with-calculator"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(

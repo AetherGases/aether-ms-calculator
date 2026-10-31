@@ -30,9 +30,9 @@ public class CostReductionForecastCalculator {
     }
 
     return new CostReductionForecastResult(
-        parsed.monthlyCostEcho(),
-        parsed.reductionPercentageEcho(),
-        parsed.periodMonthsEcho(),
+        monthlyCost,
+        parsed.reductionPercentage(),
+        parsed.periodMonths(),
         monthlySavings,
         newMonthlyCost,
         totalSavings,

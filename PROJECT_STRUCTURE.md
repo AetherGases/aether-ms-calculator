@@ -66,7 +66,7 @@ this one. Do not invent a `web/` package.
 | --- | --- |
 | `controllers/` | HTTP adapters (`@RestController`). No business rules. |
 | `services/` | Use-cases called by controllers. |
-| `dto/input`, `dto/output` | **Required.** Request and response types for every feature HTTP contract. Optional `dto/query_params` for list filters. |
+| `dto/input`, `dto/output` | **Required.** Service input and response types for every feature HTTP contract. Optional `dto/request` for JSON bodies bound by the controller, and `dto/query_params` for list filters. |
 | `mappers/` | **Required** whenever the feature has DTOs (always). DTO ↔ domain / entity mapping. |
 | `domain/` | Pure calculation / parsing that is not an HTTP adapter. Optional. |
 
@@ -80,7 +80,8 @@ calculator/
 ├── controllers/   CalculatorRoiController, CalculatorPaybackController
 ├── services/      CalculatorService
 ├── domain/        InvestmentValidator, InvestmentCalculator, result records
-├── dto/input/     CalculateInvestmentInputDTO
+├── dto/request/   CostReductionForecastRequestDTO, ReductionForecastRequestDTO
+├── dto/input/     CalculateInvestmentInputDTO, CostReductionForecastInputDTO, ReductionForecastInputDTO
 ├── dto/output/    CalculateRoiOutputDTO, CalculatePaybackOutputDTO
 └── mappers/       CalculatorMapper
 ```
@@ -90,7 +91,7 @@ calculator/
 | `calculator.domain` | parse, validate, calculate, `PythonRepr`, result records | `shared.exceptions` only (no `controllers`, `services`, `dto`, or `shared.security`) |
 | `calculator.services` | `CalculatorService` (orchestrates domain for HTTP) | `domain`, `dto`, `mappers` |
 | `calculator.controllers` | ROI and payback adapters | `services`, `dto`, `shared.docs` |
-| `calculator.dto.input` / `dto.output` | request / response types for those routes | nothing from `controllers` or `services` |
+| `calculator.dto.request` / `dto.input` / `dto.output` | request / response types for those routes | nothing from `controllers` or `services` |
 | `calculator.mappers` | mapping only | `dto`, `domain` |
 
 Controllers implement `shared.docs.CalculatorControllerDocs.Roi` /
@@ -115,26 +116,32 @@ ROI and payback share `CalculateInvestmentInputDTO`. Unknown JSON fields
 are kept on that input (Jackson `@JsonAnySetter`) so domain validation can
 reject them with the hub message. `capex` and `wacc_monthly` stay
 `JsonNode` **fields** on the DTOs so the original JSON tokens are echoed
-(`150`, not `150.0`). Forecast input uses the same `JsonNode` fields
-(`years`, `current_emission`, `green_gas`) so unknown types reach domain
-validation instead of failing Jackson binding. That is the only allowed
-use of `JsonNode` in the HTTP layer.
+(`150`, not `150.0`). `/roi` and `/payback` are the only allowed use of
+`JsonNode` in the HTTP layer.
 
-`CalculatorMapper` is the only place that turns the input DTO into the
-domain request node and domain results into output DTOs. Do not rebuild
-JSON maps in the controller or service.
+Every other JSON body binds a typed `dto/request` `*RequestDTO`. The
+controller converts it to a typed `dto/input` `*InputDTO` record with
+`CalculatorMapper.convert*RequestToInput`, and the service only sees the
+input DTO. Request DTOs keep unknown field names (`@JsonAnySetter`) so the
+domain validators still reject them with the hub message. Wrong value types
+(`"15"` or `15.0` for an integer) fail Jackson binding:
+`JacksonConfig.strictScalarCoercion` turns off scalar coercion, and
+`GlobalExceptionHandler` reports the field by name.
+
+`CalculatorMapper` is the only place that turns request DTOs into input
+DTOs, input DTOs into domain requests, and domain results into output DTOs.
+Do not rebuild JSON maps in the controller or service.
 
 ### HTTP surface
 
-All routes are served under the `/api/calculator` prefix
-(`CalculatorPaths.BASE_PATH`). Controllers and security rules must reference the
-constants in `CalculatorPaths` instead of repeating literals.
+Kong already mounts this service at `/calculator/`. Controllers must not
+repeat that prefix; the paths below are what the process serves.
 
-- `POST /api/calculator/roi`
-- `POST /api/calculator/payback`
-- `GET /api/calculator/gases`
-- `POST /api/calculator/reduction/forecast`
-- `POST /api/calculator/cost-reduction/forecast` (camelCase body; JWT + `calculator:roi`)
+- `POST /roi`
+- `POST /payback`
+- `GET /gases`
+- `POST /reduction/forecast`
+- `POST /cost-reduction/forecast` (camelCase body; JWT + `calculator:roi`)
 
 ---
 
@@ -261,13 +268,13 @@ Ask which class when that is unclear.
   It 503s only roi/payback. Forecast and gas listing must not depend on
   `INTERNAL_AUTHENTICATION_KEY`.
 - `GET /gases` and `POST /reduction/forecast` require
-  `Authorization: Bearer <jwt>` with authority `calculator:gases`.
+  `Authorization: Bearer <jwt>` with authority `calculator:gas`.
 - `POST /cost-reduction/forecast` requires JWT with authority
-  `calculator:roi` (not `calculator:gases`). Internal `authentication-key` does
+  `calculator:roi` (not `calculator:gas`). Internal `authentication-key` does
   not satisfy that path.
 - `JwtTokenFilter` skips only roi and payback. Other calculator JWT
   routes (`/gases`, `/reduction/**`) are deny-by-default: they require
-  `calculator:gases` unless `CalculatorPaths` marks them as `calculator:roi`
+  `calculator:gas` unless `CalculatorPaths` marks them as `calculator:roi`
   (`/cost-reduction/**` today).
 - Do not bind a user or company from the JSON body. Investment routes are
   service-to-service; forecast identity stays in the JWT.
@@ -339,13 +346,14 @@ Do not commit secrets. Do not put a real `INTERNAL_AUTHENTICATION_KEY` or
   controllers).
 - Do not put JPA repositories inside `calculator/`.
 - Do not authenticate ROI/payback with JWT instead of `authentication-key`.
-  Forecast and gas listing use JWT + `calculator:gases`; do not put those
+  Forecast and gas listing use JWT + `calculator:gas`; do not put those
   two routes on the internal key.
 - Do not put JPA entities in `calculator.domain` forecast math. Pass
   catalog values (`CatalogGas` id + gwp).
 - Do not invent request fields or result fields the hub contract omitted.
-- Do not bind calculator routes to `JsonNode` / `ObjectNode`. Use
-  `calculator.dto.input` and `calculator.dto.output`.
+- Do not add `JsonNode` / `ObjectNode` fields to calculator DTOs outside
+  `/roi` and `/payback`. Bind a typed `calculator.dto.request` DTO and map
+  it to `calculator.dto.input` before calling the service.
 - Do not skip `dto/input`, `dto/output`, or `mappers/` for a new feature
   endpoint. DTOs are the HTTP contract, not an optional extra.
 - Do not skip `mvn test` before claiming the suite is green.

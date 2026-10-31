@@ -2,13 +2,16 @@ package com.aether.ms_calculator.calculator;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.aether.ms_calculator.calculator.services.GasCatalogService;
+import com.aether.ms_calculator.calculator.services.FinaManyGasesService;
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
 import com.aether.ms_calculator.shared.persistence.postgres.entities.GasEntity;
 import com.aether.ms_calculator.shared.persistence.postgres.repositories.GasRepository;
@@ -38,8 +41,8 @@ class CalculatorGasesControllerTests {
 
   @BeforeEach
   void setUp() {
-    GasCatalogService gasCatalogService = new GasCatalogService(gasRepository);
-    mockMvc = CalculatorMockMvcSupport.gasCatalogMockMvc(KEY, jwtTokenProvider, gasCatalogService);
+    FinaManyGasesService finaManyGasesService = new FinaManyGasesService(gasRepository);
+    mockMvc = CalculatorMockMvcSupport.gasCatalogMockMvc(KEY, jwtTokenProvider, finaManyGasesService);
     when(jwtTokenProvider.resolveToken(any(HttpServletRequest.class)))
         .thenAnswer(
             invocation -> {
@@ -62,7 +65,7 @@ class CalculatorGasesControllerTests {
             new UsernamePasswordAuthenticationToken(
                 "gas@aether.test",
                 "",
-                List.of(new SimpleGrantedAuthority("calculator:gases"))));
+                List.of(new SimpleGrantedAuthority("calculator:gas"))));
     when(jwtTokenProvider.getAuthentication("employee-without-gas"))
         .thenReturn(
             new UsernamePasswordAuthenticationToken(
@@ -77,20 +80,20 @@ class CalculatorGasesControllerTests {
 
   @Test
   void gases_withoutJwt_returns401() throws Exception {
-    mockMvc.perform(get("/api/calculator/gases")).andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/gases")).andExpect(status().isUnauthorized());
   }
 
   @Test
   void gases_withAuthenticationKeyOnly_returns401() throws Exception {
     mockMvc
-        .perform(get("/api/calculator/gases").header(AUTH_HEADER, KEY))
+        .perform(get("/gases").header(AUTH_HEADER, KEY))
         .andExpect(status().isUnauthorized());
   }
 
   @Test
   void gases_withInvalidJwt_returns401() throws Exception {
     mockMvc
-        .perform(get("/api/calculator/gases").header("Authorization", BEARER_INVALID))
+        .perform(get("/gases").header("Authorization", BEARER_INVALID))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.error_code").value("unauthorized"));
   }
@@ -98,7 +101,7 @@ class CalculatorGasesControllerTests {
   @Test
   void gases_withJwtMissingCalculatorGas_returns403() throws Exception {
     mockMvc
-        .perform(get("/api/calculator/gases").header("Authorization", BEARER_NO_GAS))
+        .perform(get("/gases").header("Authorization", BEARER_NO_GAS))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"));
   }
@@ -106,10 +109,10 @@ class CalculatorGasesControllerTests {
   @Test
   void gases_withCalculatorRoiOnly_returns403() throws Exception {
     mockMvc
-        .perform(get("/api/calculator/gases").header("Authorization", BEARER_ROI))
+        .perform(get("/gases").header("Authorization", BEARER_ROI))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.error_code").value("forbidden"))
-        .andExpect(jsonPath("$.message").value("Missing calculator:gases permission."));
+        .andExpect(jsonPath("$.message").value("Missing calculator:gas permission."));
   }
 
   @Test
@@ -123,7 +126,7 @@ class CalculatorGasesControllerTests {
                     4, "Biogenic carbon dioxide", "CO2(b)", true, new BigDecimal("1"), null)));
 
     mockMvc
-        .perform(get("/api/calculator/gases").header("Authorization", BEARER_GAS))
+        .perform(get("/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(3)))
         .andExpect(jsonPath("$[0].id").value(1))
@@ -140,9 +143,48 @@ class CalculatorGasesControllerTests {
     when(gasRepository.findAll()).thenReturn(List.of());
 
     mockMvc
-        .perform(get("/api/calculator/gases").header("Authorization", BEARER_GAS))
+        .perform(get("/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));
+  }
+
+  @Test
+  void gases_withNameFilter_searchesByNormalizedNameIgnoringCase() throws Exception {
+    when(gasRepository.findByNameContainingIgnoreCase("meth"))
+        .thenReturn(
+            List.of(new GasEntity(2, "Methane", "CH4", false, new BigDecimal("28"), null)));
+
+    mockMvc
+        .perform(get("/gases").param("name", "  METH ").header("Authorization", BEARER_GAS))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].name").value("Methane"));
+
+    verify(gasRepository).findByNameContainingIgnoreCase("meth");
+    verify(gasRepository, never()).findAll();
+  }
+
+  @Test
+  void gases_withBlankNameFilter_returnsFullCatalog() throws Exception {
+    when(gasRepository.findAll()).thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/gases").param("name", "   ").header("Authorization", BEARER_GAS))
+        .andExpect(status().isOk());
+
+    verify(gasRepository).findAll();
+    verify(gasRepository, never()).findByNameContainingIgnoreCase(anyString());
+  }
+
+  @Test
+  void gases_withoutNameFilter_doesNotSearchByName() throws Exception {
+    when(gasRepository.findAll()).thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/gases").header("Authorization", BEARER_GAS))
+        .andExpect(status().isOk());
+
+    verify(gasRepository, never()).findByNameContainingIgnoreCase(anyString());
   }
 
   @Test
@@ -150,10 +192,10 @@ class CalculatorGasesControllerTests {
     when(gasRepository.findAll()).thenReturn(List.of());
     MockMvc unconfigured =
         CalculatorMockMvcSupport.gasCatalogMockMvc(
-            "", jwtTokenProvider, new GasCatalogService(gasRepository));
+            "", jwtTokenProvider, new FinaManyGasesService(gasRepository));
 
     unconfigured
-        .perform(get("/api/calculator/gases").header("Authorization", BEARER_GAS))
+        .perform(get("/gases").header("Authorization", BEARER_GAS))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(0)));
   }
