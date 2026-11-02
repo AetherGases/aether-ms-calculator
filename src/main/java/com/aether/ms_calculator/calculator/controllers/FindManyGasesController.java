@@ -3,7 +3,7 @@ package com.aether.ms_calculator.calculator.controllers;
 import com.aether.ms_calculator.calculator.dto.output.GasCatalogItemOutputDTO;
 import com.aether.ms_calculator.calculator.dto.query_params.FindManyGasesQueryParamsDTO;
 import com.aether.ms_calculator.calculator.mappers.CalculatorMapper;
-import com.aether.ms_calculator.calculator.services.FinaManyGasesService;
+import com.aether.ms_calculator.calculator.services.FindManyGasesService;
 import com.aether.ms_calculator.shared.docs.CalculatorControllerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class FindManyGasesController implements CalculatorControllerDocs.FindManyGases {
 
-  private final FinaManyGasesService finaManyGasesService;
+  private final FindManyGasesService findManyGasesService;
 
   @Override
   @GetMapping("/gases")
@@ -30,7 +30,7 @@ public class FindManyGasesController implements CalculatorControllerDocs.FindMan
       FindManyGasesQueryParamsDTO query
   ){
     return new ResponseEntity<>(
-        this.finaManyGasesService.findManyGases(
+        this.findManyGasesService.findManyGases(
             CalculatorMapper.convertFindManyGasesQueryToInput(query)
         ),
         HttpStatus.OK

@@ -7,7 +7,7 @@ import com.aether.ms_calculator.calculator.controllers.CalculatorRoiController;
 import com.aether.ms_calculator.calculator.controllers.FindManyGasesController;
 import com.aether.ms_calculator.calculator.services.CalculatorService;
 import com.aether.ms_calculator.calculator.services.CostReductionForecastService;
-import com.aether.ms_calculator.calculator.services.FinaManyGasesService;
+import com.aether.ms_calculator.calculator.services.FindManyGasesService;
 import com.aether.ms_calculator.calculator.services.ReductionForecastService;
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
 import com.aether.ms_calculator.shared.config.AuthenticationKeyFilterConfiguration;
@@ -90,7 +90,7 @@ class AuthenticationKeyFilterChainTest {
   @MockitoBean private PermissionRepository permissionRepository;
 
   @MockitoBean private CalculatorService calculatorService;
-  @MockitoBean private FinaManyGasesService finaManyGasesService;
+  @MockitoBean private FindManyGasesService finaManyGasesService;
   @MockitoBean private ReductionForecastService reductionForecastService;
   @MockitoBean private CostReductionForecastService costReductionForecastService;
 

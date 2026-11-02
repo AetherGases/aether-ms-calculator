@@ -5,7 +5,7 @@ import com.aether.ms_calculator.calculator.controllers.FindManyGasesController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorReductionForecastController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorPaybackController;
 import com.aether.ms_calculator.calculator.controllers.CalculatorRoiController;
-import com.aether.ms_calculator.calculator.services.FinaManyGasesService;
+import com.aether.ms_calculator.calculator.services.FindManyGasesService;
 import com.aether.ms_calculator.calculator.services.CostReductionForecastService;
 import com.aether.ms_calculator.calculator.services.ReductionForecastService;
 import com.aether.ms_calculator.calculator.domain.InvestmentCalculator;
@@ -97,7 +97,7 @@ public final class CalculatorMockMvcSupport {
   public static MockMvc gasCatalogMockMvc(
       String internalAuthenticationKey,
       JwtTokenProvider jwtTokenProvider,
-      FinaManyGasesService finaManyGasesService) {
+      FindManyGasesService finaManyGasesService) {
     ObjectMapper objectMapper = new ObjectMapper();
     GlobalExceptionHandler advice = exceptionHandler();
     AuthenticationKeyFilter keyFilter =

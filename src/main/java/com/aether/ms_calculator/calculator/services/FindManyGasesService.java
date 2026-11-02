@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class FinaManyGasesService {
+public class FindManyGasesService {
 
   private final GasRepository repository;
 

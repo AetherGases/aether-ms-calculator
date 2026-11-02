@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.aether.ms_calculator.calculator.services.FinaManyGasesService;
+import com.aether.ms_calculator.calculator.services.FindManyGasesService;
 import com.aether.ms_calculator.calculator.support.CalculatorMockMvcSupport;
 import com.aether.ms_calculator.shared.persistence.postgres.entities.GasEntity;
 import com.aether.ms_calculator.shared.persistence.postgres.repositories.GasRepository;
@@ -41,7 +41,7 @@ class CalculatorGasesControllerTests {
 
   @BeforeEach
   void setUp() {
-    FinaManyGasesService finaManyGasesService = new FinaManyGasesService(gasRepository);
+    FindManyGasesService finaManyGasesService = new FindManyGasesService(gasRepository);
     mockMvc = CalculatorMockMvcSupport.gasCatalogMockMvc(KEY, jwtTokenProvider, finaManyGasesService);
     when(jwtTokenProvider.resolveToken(any(HttpServletRequest.class)))
         .thenAnswer(
@@ -192,7 +192,7 @@ class CalculatorGasesControllerTests {
     when(gasRepository.findAll()).thenReturn(List.of());
     MockMvc unconfigured =
         CalculatorMockMvcSupport.gasCatalogMockMvc(
-            "", jwtTokenProvider, new FinaManyGasesService(gasRepository));
+            "", jwtTokenProvider, new FindManyGasesService(gasRepository));
 
     unconfigured
         .perform(get("/gases").header("Authorization", BEARER_GAS))
